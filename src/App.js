@@ -14,11 +14,10 @@ import {
 import { 
   BookOpen, Star, PlusCircle, GraduationCap, 
   Search, ChevronDown, Trash2, CheckCircle2,
-  LogOut, X
+  LogOut, X, AlertCircle
 } from 'lucide-react';
 
-// --- 請在此填入你的真實 Firebase 配置 ---
-// 如果使用環境變數無效，請直接將字串貼在引號內
+// --- 重要：請在此填入你的真實 Firebase 配置 ---
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
   authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
@@ -28,11 +27,18 @@ const firebaseConfig = {
   appId: process.env.REACT_APP_FIREBASE_APP_ID
 };
 
+// 防呆檢查：如果還沒填寫 API Key，先給予提示
+const isConfigured = firebaseConfig.apiKey && firebaseConfig.apiKey !== "你的_API_KEY";
+
+let app, auth, db, googleProvider;
 const appId = "my-vocab-app";
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const googleProvider = new GoogleAuthProvider();
+
+if (isConfigured) {
+  app = initializeApp(firebaseConfig);
+  auth = getAuth(app);
+  db = getFirestore(app);
+  googleProvider = new GoogleAuthProvider();
+}
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -41,23 +47,12 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
 
-  // 登入
-  const handleLogin = async () => {
-    try {
-      await signInWithPopup(auth, googleProvider);
-    } catch (err) {
-      console.error("Auth Error:", err);
-      alert("登入失敗：請檢查 Firebase Console 是否啟用了 Google 登入，並確認 API Key 正確。");
-    }
-  };
-
-  // 登出
-  const handleLogout = () => {
-    if (window.confirm("確定要登出嗎？")) signOut(auth);
-  };
-
   // 監聽登入狀態
   useEffect(() => {
+    if (!isConfigured) {
+      setLoading(false);
+      return;
+    }
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setLoading(false);
@@ -67,7 +62,7 @@ export default function App() {
 
   // 監聽資料庫
   useEffect(() => {
-    if (!user) return;
+    if (!user || !isConfigured) return;
     const vocabPath = `artifacts/${appId}/users/${user.uid}/vocabulary`;
     const q = query(collection(db, vocabPath));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -78,10 +73,41 @@ export default function App() {
     return () => unsubscribe();
   }, [user]);
 
+  const handleLogin = async () => {
+    if (!isConfigured) {
+      alert("請先在程式碼中填寫 Firebase Config 資訊！");
+      return;
+    }
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (err) {
+      console.error("Auth Error:", err);
+      alert("登入失敗：請檢查 Firebase Console 是否啟用了 Google 登入。");
+    }
+  };
+
+  const handleLogout = () => {
+    if (window.confirm("確定要登出嗎？")) signOut(auth);
+  };
+
   const showToast = (msg) => {
     setMessage(msg);
     setTimeout(() => setMessage(null), 3000);
   };
+
+  if (!isConfigured) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center bg-gray-50 p-6 text-center">
+        <div className="bg-red-100 p-4 rounded-full mb-4">
+          <AlertCircle className="text-red-600 w-12 h-12" />
+        </div>
+        <h1 className="text-2xl font-black text-gray-800 mb-2">Firebase 未配置</h1>
+        <p className="text-gray-500 max-w-sm">
+          請在 <code>App.jsx</code> 檔案開頭的 <code>firebaseConfig</code> 區塊中填入您的 Firebase 密鑰。
+        </p>
+      </div>
+    );
+  }
 
   if (loading) return (
     <div className="flex h-screen items-center justify-center bg-white">
@@ -110,7 +136,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col pb-20 md:pb-0 md:pl-64 font-sans antialiased text-slate-900">
-      {/* 桌面側邊欄 */}
       <nav className="hidden md:flex flex-col fixed left-0 top-0 bottom-0 w-64 bg-white border-r border-gray-200 p-6 z-40">
         <div className="flex items-center gap-3 mb-10">
           <div className="bg-indigo-600 p-2 rounded-xl">
@@ -118,14 +143,12 @@ export default function App() {
           </div>
           <h1 className="font-bold text-xl text-gray-800">學測單字雲</h1>
         </div>
-        
         <div className="space-y-2">
           <NavItem icon={<BookOpen />} label="我的單字庫" active={activeTab === 'library'} onClick={() => setActiveTab('library')} />
           <NavItem icon={<Star />} label="收藏清單" active={activeTab === 'fav'} onClick={() => setActiveTab('fav')} />
           <NavItem icon={<PlusCircle />} label="新增單字" active={activeTab === 'add'} onClick={() => setActiveTab('add')} />
           <NavItem icon={<GraduationCap />} label="練習模式" active={activeTab === 'quiz'} onClick={() => setActiveTab('quiz')} />
         </div>
-
         <div className="mt-auto pt-6 space-y-4">
           <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 flex items-center gap-3">
             {user.photoURL && <img src={user.photoURL} className="w-8 h-8 rounded-full shadow-sm" alt="avatar" />}
@@ -139,7 +162,6 @@ export default function App() {
         </div>
       </nav>
 
-      {/* 手機導航 */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-gray-100 flex justify-around p-3 z-50">
         <MobileNavItem icon={<BookOpen />} active={activeTab === 'library'} onClick={() => setActiveTab('library')} />
         <MobileNavItem icon={<PlusCircle />} active={activeTab === 'add'} onClick={() => setActiveTab('add')} />
@@ -147,11 +169,10 @@ export default function App() {
         <MobileNavItem icon={<GraduationCap />} active={activeTab === 'quiz'} onClick={() => setActiveTab('quiz')} />
       </nav>
 
-      {/* 主內容 */}
       <main className="flex-1 p-4 md:p-10 max-w-5xl mx-auto w-full">
-        {activeTab === 'library' && <VocabLibrary vocab={vocabList} user={user} title="所有單字" />}
-        {activeTab === 'fav' && <VocabLibrary vocab={vocabList.filter(v => v.favorite)} user={user} title="我的收藏" />}
-        {activeTab === 'add' && <AddVocab user={user} showToast={showToast} />}
+        {activeTab === 'library' && <VocabLibrary vocab={vocabList} user={user} title="所有單字" db={db} appId={appId} />}
+        {activeTab === 'fav' && <VocabLibrary vocab={vocabList.filter(v => v.favorite)} user={user} title="我的收藏" db={db} appId={appId} />}
+        {activeTab === 'add' && <AddVocab user={user} showToast={showToast} db={db} appId={appId} />}
         {activeTab === 'quiz' && <Quiz vocab={vocabList} />}
       </main>
 
@@ -184,7 +205,7 @@ function MobileNavItem({ icon, active, onClick }) {
   );
 }
 
-function VocabLibrary({ vocab, user, title }) {
+function VocabLibrary({ vocab, user, title, db, appId }) {
   const [expandedId, setExpandedId] = useState(null);
   const [search, setSearch] = useState('');
 
@@ -224,7 +245,7 @@ function VocabLibrary({ vocab, user, title }) {
       <div className="grid gap-3">
         {filtered.length === 0 ? (
           <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-gray-200 text-gray-400 font-bold">
-            找不到相關單字
+            目前沒有資料
           </div>
         ) : (
           filtered.map(item => (
@@ -268,7 +289,7 @@ function VocabLibrary({ vocab, user, title }) {
   );
 }
 
-function AddVocab({ user, showToast }) {
+function AddVocab({ user, showToast, db, appId }) {
   const [formData, setFormData] = useState({ word: '', pos: 'n.', definition: '', exampleEng: '', exampleChn: '' });
 
   const handleSubmit = async (e) => {
@@ -358,15 +379,13 @@ function Quiz({ vocab }) {
         onClick={() => setIsFlipped(!isFlipped)}
       >
         <div className={`relative w-full h-full transition-all duration-500 transform-gpu ${isFlipped ? 'rotate-y-180' : ''}`} style={{ transformStyle: 'preserve-3d' }}>
-          {/* 正面 */}
           <div className="absolute inset-0 bg-white rounded-[3.5rem] shadow-xl flex flex-col items-center justify-center p-8 border border-gray-100 backface-hidden">
             <span className="text-indigo-600 font-black uppercase tracking-widest text-sm mb-4">{current.pos}</span>
-            <h2 className="text-5xl font-black text-gray-900 tracking-tighter">{current.word}</h2>
+            <h2 className="text-5xl font-black text-gray-900 tracking-tighter text-center">{current.word}</h2>
             <p className="mt-20 text-gray-300 font-bold text-xs animate-pulse">點擊翻看定義</p>
           </div>
-          {/* 反面 */}
           <div className="absolute inset-0 bg-indigo-600 rounded-[3.5rem] shadow-xl flex flex-col items-center justify-center p-10 text-white rotate-y-180 backface-hidden">
-            <h2 className="text-4xl font-black mb-6">{current.definition}</h2>
+            <h2 className="text-4xl font-black mb-6 text-center">{current.definition}</h2>
             <div className="bg-indigo-500/30 p-4 rounded-2xl border border-indigo-400/30 max-w-full">
               <p className="text-indigo-100 text-sm italic line-clamp-3">"{current.exampleEng}"</p>
             </div>
@@ -387,11 +406,14 @@ function Quiz({ vocab }) {
   );
 }
 
-// 翻牌所需 CSS
-const style = document.createElement('style');
-style.textContent = `
-  .rotate-y-180 { transform: rotateY(180deg); }
-  .backface-hidden { backface-visibility: hidden; }
-  .perspective-1000 { perspective: 1000px; }
-`;
-document.head.appendChild(style);
+// 動態加入翻牌所需的 CSS
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = `
+    .rotate-y-180 { transform: rotateY(180deg); }
+    .backface-hidden { backface-visibility: hidden; }
+    .animate-spin { animation: spin 1s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  `;
+  document.head.appendChild(style);
+}

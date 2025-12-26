@@ -1,8 +1,3 @@
-/**
- * 這個版本將 Tailwind 樣式直接注入，解決自架時樣式失效的問題。
- * 運行前請先安裝：npm install firebase lucide-react
- */
-
 import React, { useState, useEffect } from 'react';
 import { initializeApp } from 'firebase/app';
 import { getAuth, onAuthStateChanged, signInAnonymously } from 'firebase/auth';

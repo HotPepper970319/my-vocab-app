@@ -11,7 +11,7 @@ import {
 import { 
   BookOpen, Star, PlusCircle, GraduationCap, Search, ChevronDown, 
   Trash2, CheckCircle2, LogOut, X, AlertCircle, Copy, AlertTriangle,
-  FolderPlus, Folder, Tags, Plus, MoreHorizontal
+  FolderPlus, Folder, Tags, Plus, MoreHorizontal, FileText, Layers
 } from 'lucide-react';
 
 // --- 請在此填入你的真實 Firebase 配置 ---
@@ -368,43 +368,133 @@ function VocabLibrary({ vocab, user, title, db, appId, categories }) {
   );
 }
 
-// --- 其他子組件 (與原版雷同) ---
+// --- 新增單字組件 (含批量新增) ---
 function AddVocab({ user, showToast, db, appId, setActiveTab }) {
+  const [mode, setMode] = useState('single'); // 'single' or 'bulk'
   const [formData, setFormData] = useState({ word: '', pos: 'n.', definition: '', exampleEng: '', exampleChn: '' });
+  const [bulkText, setBulkText] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await addDoc(collection(db, `artifacts/${appId}/users/${user.uid}/vocabulary`), {
-      ...formData, favorite: false, categoryIds: [], createdAt: serverTimestamp()
-    });
-    showToast(`${formData.word} 加入成功`);
-    setFormData({ word: '', pos: 'n.', definition: '', exampleEng: '', exampleChn: '' });
-    setActiveTab('library');
+    if (mode === 'single') {
+      await addDoc(collection(db, `artifacts/${appId}/users/${user.uid}/vocabulary`), {
+        ...formData, favorite: false, categoryIds: [], createdAt: serverTimestamp()
+      });
+      showToast(`${formData.word} 加入成功`);
+      setActiveTab('library');
+    } else {
+      await handleBulkUpload();
+    }
   };
+
+  const handleBulkUpload = async () => {
+    if (!bulkText.trim()) return;
+    setIsProcessing(true);
+    const lines = bulkText.split('\n').filter(line => line.trim() !== '');
+    let successCount = 0;
+
+    try {
+      for (const line of lines) {
+        // 格式：英文單字; 詞性; 中文; 例句; 例句翻譯; 補充; 補充翻譯
+        const parts = line.split(';').map(p => p.trim());
+        if (parts.length >= 3) {
+          await addDoc(collection(db, `artifacts/${appId}/users/${user.uid}/vocabulary`), {
+            word: parts[0],
+            pos: parts[1] || 'n.',
+            definition: parts[2],
+            exampleEng: parts[3] || '',
+            exampleChn: parts[4] || '',
+            supplement: parts[5] || '',
+            supplementChn: parts[6] || '',
+            favorite: false,
+            categoryIds: [],
+            createdAt: serverTimestamp()
+          });
+          successCount++;
+        }
+      }
+      showToast(`批量新增成功，共 ${successCount} 個單字`);
+      setActiveTab('library');
+    } catch (error) {
+      console.error(error);
+      showToast('批量新增過程中發生錯誤');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
-    <div className="max-w-2xl mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-      <h2 className="text-4xl font-black text-slate-900 text-center">新增單字</h2>
+    <div className="max-w-2xl mx-auto space-y-8 animate-in slide-in-from-bottom-4 duration-500 pb-20">
+      <div className="text-center space-y-4">
+        <h2 className="text-4xl font-black text-slate-900">{mode === 'single' ? '新增單字' : '批量新增單字'}</h2>
+        <div className="flex justify-center gap-2">
+          <button 
+            onClick={() => setMode('single')}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${mode === 'single' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-400'}`}
+          >
+            單一新增
+          </button>
+          <button 
+            onClick={() => setMode('bulk')}
+            className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${mode === 'bulk' ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white text-slate-400'}`}
+          >
+            批量匯入
+          </button>
+        </div>
+      </div>
+
       <form onSubmit={handleSubmit} className="bg-white p-8 rounded-[2.5rem] shadow-xl space-y-6 border border-slate-50">
-        <div className="grid grid-cols-3 gap-4">
-          <div className="col-span-2 space-y-2">
-            <label className="text-xs font-black text-slate-400 ml-2 uppercase">Word</label>
-            <input required className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500" value={formData.word} onChange={e => setFormData({...formData, word: e.target.value})} />
+        {mode === 'single' ? (
+          <>
+            <div className="grid grid-cols-3 gap-4">
+              <div className="col-span-2 space-y-2">
+                <label className="text-xs font-black text-slate-400 ml-2 uppercase">Word</label>
+                <input required className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500" value={formData.word} onChange={e => setFormData({...formData, word: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black text-slate-400 ml-2 uppercase">詞性</label>
+                <select className="w-full px-4 py-4 bg-slate-50 rounded-2xl outline-none" value={formData.pos} onChange={e => setFormData({...formData, pos: e.target.value})}>
+                  {['n.', 'v.', 'adj.', 'adv.', 'phr.'].map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-400 ml-2 uppercase">Definition</label>
+              <input required className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" value={formData.definition} onChange={e => setFormData({...formData, definition: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black text-slate-400 ml-2 uppercase">Example</label>
+              <textarea rows="2" className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" value={formData.exampleEng} onChange={e => setFormData({...formData, exampleEng: e.target.value})} />
+            </div>
+          </>
+        ) : (
+          <div className="space-y-4">
+            <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100 flex items-start gap-3">
+              <AlertCircle className="text-amber-500 shrink-0 mt-0.5" size={18} />
+              <div>
+                <p className="text-xs font-bold text-amber-700">格式說明 (每一行為一個單字)：</p>
+                <p className="text-[10px] text-amber-600 mt-1 font-mono">英文單字; 詞性; 中文; 例句; 例句翻譯; 補充; 補充翻譯</p>
+              </div>
+            </div>
+            <textarea 
+              required
+              rows="10" 
+              className="w-full px-6 py-4 bg-slate-50 rounded-3xl outline-none font-mono text-sm focus:ring-2 focus:ring-indigo-500" 
+              placeholder="apple; n.; 蘋果; I like to eat apples.; 我喜歡吃蘋果。&#10;banana; n.; 香蕉; This is a banana.; 這是一根香蕉。"
+              value={bulkText}
+              onChange={e => setBulkText(e.target.value)}
+            />
           </div>
-          <div className="space-y-2">
-            <label className="text-xs font-black text-slate-400 ml-2 uppercase">詞性</label>
-            <select className="w-full px-4 py-4 bg-slate-50 rounded-2xl outline-none" value={formData.pos} onChange={e => setFormData({...formData, pos: e.target.value})}>
-              {['n.', 'v.', 'adj.', 'adv.', 'phr.'].map(p => <option key={p} value={p}>{p}</option>)}
-            </select>
-          </div>
-        </div>
-        <div className="space-y-2">
-          <label className="text-xs font-black text-slate-400 ml-2 uppercase">Definition</label>
-          <input required className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" value={formData.definition} onChange={e => setFormData({...formData, definition: e.target.value})} />
-        </div>
-        <div className="space-y-2">
-          <label className="text-xs font-black text-slate-400 ml-2 uppercase">Example</label>
-          <textarea rows="2" className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" value={formData.exampleEng} onChange={e => setFormData({...formData, exampleEng: e.target.value})} />
-        </div>
-        <button type="submit" className="w-full py-5 bg-indigo-600 text-white rounded-3xl font-black text-lg shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all">儲存到雲端</button>
+        )}
+        
+        <button 
+          type="submit" 
+          disabled={isProcessing}
+          className={`w-full py-5 bg-indigo-600 text-white rounded-3xl font-black text-lg shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all ${isProcessing ? 'opacity-50 cursor-not-allowed' : ''}`}
+        >
+          {isProcessing ? '處理中...' : '儲存到雲端'}
+        </button>
       </form>
     </div>
   );

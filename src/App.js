@@ -2,19 +2,20 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { initializeApp } from 'firebase/app';
 import { 
   getAuth, onAuthStateChanged, GoogleAuthProvider, 
-  signInWithPopup, signInWithRedirect, getRedirectResult, signOut 
+  signInWithPopup, signOut 
 } from 'firebase/auth';
 import { 
   getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, 
-  onSnapshot, query, serverTimestamp, arrayUnion, arrayRemove, where
+  onSnapshot, query, serverTimestamp, arrayUnion, arrayRemove
 } from 'firebase/firestore';
 import { 
-  BookOpen, Star, PlusCircle, GraduationCap, Search, ChevronDown, 
-  Trash2, CheckCircle2, LogOut, X, AlertCircle, Copy, AlertTriangle,
-  FolderPlus, Folder, Tags, Plus, MoreHorizontal, FileText, Layers,
-  Menu, ChevronRight, LayoutGrid, ListChecks
+  BookOpen, Star, PlusCircle, GraduationCap, Search, 
+  Trash2, CheckCircle2, LogOut, X, AlertCircle,
+  Folder, Tags, Plus, Layers, Menu, 
+  RotateCcw, ChevronLeft, ChevronRight, Play
 } from 'lucide-react';
 
+// --- Firebase 配置 ---
 const firebaseConfig = {
   apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
   authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
@@ -43,6 +44,7 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   useEffect(() => {
     if (!isConfigured) { setLoading(false); return; }
@@ -69,6 +71,11 @@ export default function App() {
     setTimeout(() => setMessage(null), 3000);
   };
 
+  const handleLogout = async () => {
+    await signOut(auth);
+    setShowLogoutConfirm(false);
+  };
+
   if (loading) return <div className="flex h-screen items-center justify-center font-bold text-indigo-600">載入中...</div>;
 
   if (!user) return (
@@ -80,7 +87,7 @@ export default function App() {
         <button onClick={() => signInWithPopup(auth, googleProvider)} className="w-full flex items-center justify-center gap-3 py-4 bg-white border-2 border-slate-100 rounded-2xl font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="G" /> 使用 Google 登入
         </button>
-        <div className="pt-4 text-slate-300 text-xs font-mono">v1.2.1 (beta)</div>
+        <div className="pt-4 text-slate-300 text-xs font-mono">v1.2.2 (beta)</div>
       </div>
     </div>
   );
@@ -90,12 +97,12 @@ export default function App() {
     { id: 'database', label: '分類管理', icon: <Tags /> },
     { id: 'fav', label: '收藏清單', icon: <Star /> },
     { id: 'add', label: '新增單字', icon: <PlusCircle /> },
-    { id: 'quiz', label: '測驗模式', icon: <GraduationCap /> },
+    { id: 'quiz', label: '學習模式', icon: <GraduationCap /> },
   ];
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row font-sans antialiased text-slate-900">
-      {/* 側邊導航 (Desktop) */}
+      {/* Sidebar Desktop */}
       <aside className={`fixed inset-y-0 left-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 w-64 bg-white border-r border-slate-200 transition-transform duration-300 ease-in-out z-50 flex flex-col`}>
         <div className="p-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -116,14 +123,14 @@ export default function App() {
              <img src={user.photoURL} className="w-8 h-8 rounded-full shadow-sm" alt="avt" />
              <span className="text-xs font-black text-slate-700 truncate">{user.displayName}</span>
           </div>
-          <button onClick={() => signOut(auth)} className="w-full flex items-center gap-3 px-4 py-2 text-slate-400 hover:text-red-500 text-sm font-bold">
+          <button onClick={() => setShowLogoutConfirm(true)} className="w-full flex items-center gap-3 px-4 py-2 text-slate-400 hover:text-red-500 text-sm font-bold">
             <LogOut size={16} /> 登出帳號
           </button>
-          <div className="text-center text-[10px] text-slate-300 font-mono">v1.2.1 (beta)</div>
+          <div className="text-center text-[10px] text-slate-300 font-mono">v1.2.2 (beta)</div>
         </div>
       </aside>
 
-      {/* 手機 Top Bar */}
+      {/* Mobile Top Bar */}
       <div className="md:hidden bg-white border-b border-slate-100 p-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-2">
           <div className="bg-indigo-600 p-1.5 rounded-lg"><GraduationCap className="text-white w-5 h-5" /></div>
@@ -132,7 +139,6 @@ export default function App() {
         <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-slate-50 rounded-xl text-slate-600"><Menu size={20}/></button>
       </div>
 
-      {/* 主內容區 */}
       <main className="flex-1 p-4 md:ml-64 md:p-10 max-w-5xl">
         {activeTab === 'library' && <VocabLibrary vocab={vocabList} user={user} title="所有單字" db={db} appId={appId} categories={categories} showToast={showToast} />}
         {activeTab === 'database' && <CategoryManager categories={categories} vocab={vocabList} user={user} db={db} appId={appId} showToast={showToast} />}
@@ -141,9 +147,22 @@ export default function App() {
         {activeTab === 'quiz' && <Quiz vocab={vocabList} categories={categories} db={db} user={user} appId={appId} />}
       </main>
 
-      {/* Toast */}
+      {/* Logout Modal */}
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="bg-white p-8 rounded-[2.5rem] max-w-xs w-full text-center space-y-6 shadow-2xl">
+            <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto"><LogOut size={32}/></div>
+            <h3 className="text-xl font-black">確定要登出嗎？</h3>
+            <div className="flex gap-3">
+              <button onClick={() => setShowLogoutConfirm(false)} className="flex-1 py-3 bg-slate-100 rounded-2xl font-bold">取消</button>
+              <button onClick={handleLogout} className="flex-1 py-3 bg-red-500 text-white rounded-2xl font-bold">確定登出</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {message && (
-        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl z-[100] flex items-center gap-2 font-bold text-sm animate-bounce">
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-full shadow-2xl z-[100] flex items-center gap-2 font-bold text-sm">
           <CheckCircle2 className="w-5 h-5 text-green-400" /> {message}
         </div>
       )}
@@ -151,14 +170,13 @@ export default function App() {
   );
 }
 
-// --- 單字庫組件 (含批量管理與手機優化) ---
+// --- 單字庫組件 ---
 function VocabLibrary({ vocab, user, title, db, appId, categories, showToast }) {
   const [expandedId, setExpandedId] = useState(null);
   const [search, setSearch] = useState('');
   const [posFilter, setPosFilter] = useState('all');
   const [selectedIds, setSelectedIds] = useState([]);
   const [isBulkMode, setIsBulkMode] = useState(false);
-  const [bulkActionTarget, setBulkActionTarget] = useState(null);
 
   const filtered = vocab
     .filter(v => (posFilter === 'all' || v.pos === posFilter))
@@ -190,14 +208,9 @@ function VocabLibrary({ vocab, user, title, db, appId, categories, showToast }) 
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h2 className="text-3xl md:text-4xl font-black text-slate-900">{title}</h2>
-        <div className="flex gap-2">
-          <button 
-            onClick={() => { setIsBulkMode(!isBulkMode); setSelectedIds([]); }}
-            className={`px-4 py-2 rounded-xl font-bold text-sm transition-all ${isBulkMode ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white border border-slate-200 text-slate-500'}`}
-          >
-            {isBulkMode ? '取消選取' : '批量管理'}
-          </button>
-        </div>
+        <button onClick={() => { setIsBulkMode(!isBulkMode); setSelectedIds([]); }} className={`px-4 py-2 rounded-xl font-bold text-sm ${isBulkMode ? 'bg-indigo-600 text-white shadow-lg' : 'bg-white border border-slate-200 text-slate-500'}`}>
+          {isBulkMode ? '取消選取' : '批量管理'}
+        </button>
       </div>
 
       <div className="relative">
@@ -205,66 +218,49 @@ function VocabLibrary({ vocab, user, title, db, appId, categories, showToast }) 
         <input type="text" placeholder="搜尋單字..." className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-2xl shadow-sm outline-none focus:ring-2 focus:ring-indigo-500" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
-      <div className="flex flex-wrap gap-2 overflow-x-auto pb-2 scrollbar-hide">
-        {['all', 'n.', 'v.', 'adj.', 'adv.', 'phr.'].map(p => (
-          <button key={p} onClick={() => setPosFilter(p)} className={`whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-bold transition-all ${posFilter === p ? 'bg-indigo-600 text-white' : 'bg-white text-slate-400 border border-slate-100'}`}>
-            {p === 'all' ? '全部' : p}
-          </button>
-        ))}
-      </div>
-
       {isBulkMode && selectedIds.length > 0 && (
-        <div className="sticky top-20 z-30 bg-indigo-900 text-white p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xl animate-in fade-in slide-in-from-top-4">
+        <div className="sticky top-20 z-30 bg-indigo-900 text-white p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xl">
           <span className="font-bold">已選取 {selectedIds.length} 個單字</span>
           <div className="flex gap-2 w-full md:w-auto">
-            <select 
-              className="flex-1 md:w-48 px-3 py-2 bg-indigo-800 text-white rounded-xl border border-indigo-700 outline-none text-sm font-bold"
-              onChange={(e) => handleBulkAddCategory(e.target.value)}
-              value=""
-            >
+            <select className="flex-1 md:w-48 px-3 py-2 bg-indigo-800 text-white rounded-xl border border-indigo-700 text-sm font-bold" onChange={(e) => handleBulkAddCategory(e.target.value)} value="">
               <option value="" disabled>加入分類至...</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
-            <button onClick={() => setSelectedIds([])} className="p-2 hover:bg-indigo-800 rounded-xl"><X size={20}/></button>
           </div>
         </div>
       )}
 
       <div className="grid gap-3">
         {filtered.map(item => (
-          <div key={item.id} className={`group bg-white border rounded-3xl transition-all ${selectedIds.includes(item.id) ? 'border-indigo-600 ring-2 ring-indigo-100' : 'border-slate-100 shadow-sm'}`}>
+          <div key={item.id} className={`bg-white border rounded-3xl transition-all ${selectedIds.includes(item.id) ? 'border-indigo-600 ring-2 ring-indigo-100' : 'border-slate-100 shadow-sm'}`}>
             <div className="p-4 md:p-5 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
                 {isBulkMode ? (
-                  <button onClick={() => toggleSelect(item.id)} className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${selectedIds.includes(item.id) ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-200'}`}>
+                  <button onClick={() => toggleSelect(item.id)} className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center ${selectedIds.includes(item.id) ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-200'}`}>
                     {selectedIds.includes(item.id) && <CheckCircle2 size={16} />}
                   </button>
                 ) : (
                   <button onClick={(e) => toggleFav(e, item)} className="p-1"><Star className={`w-6 h-6 ${item.favorite ? 'fill-yellow-400 text-yellow-400' : 'text-slate-200'}`} /></button>
                 )}
                 <div className="cursor-pointer" onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}>
-                  <h3 className="font-black text-lg md:text-xl text-slate-800">{item.word} <span className="ml-1 text-[10px] bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase">{item.pos}</span></h3>
-                  <p className="text-slate-500 text-sm font-medium">{item.definition}</p>
+                  <h3 className="font-black text-lg text-slate-800">{item.word} <span className="text-[10px] bg-slate-100 text-slate-500 px-1 py-0.5 rounded">{item.pos}</span></h3>
+                  <p className="text-slate-500 text-sm">{item.definition}</p>
                 </div>
               </div>
               {!isBulkMode && (
-                <button onClick={async () => { if(window.confirm('確定刪除？')) await deleteDoc(doc(db, `artifacts/${appId}/users/${user.uid}/vocabulary`, item.id)); }} className="p-2 text-slate-200 hover:text-red-500 transition-colors">
-                  <Trash2 size={18} />
-                </button>
+                <button onClick={async () => { if(window.confirm('確定刪除？')) await deleteDoc(doc(db, `artifacts/${appId}/users/${user.uid}/vocabulary`, item.id)); }} className="text-slate-200 hover:text-red-500"><Trash2 size={18} /></button>
               )}
             </div>
             {expandedId === item.id && (
-              <div className="px-14 pb-5 pt-0">
-                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 text-sm">
-                   <p className="font-bold text-slate-700 mb-1">{item.exampleEng}</p>
+              <div className="px-14 pb-5 pt-0 text-sm">
+                <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                   <p className="font-bold text-slate-700">{item.exampleEng}</p>
                    <p className="text-slate-400">{item.exampleChn}</p>
-                   {item.categoryIds?.length > 0 && (
-                     <div className="mt-3 flex flex-wrap gap-1">
-                       {item.categoryIds.map(cid => (
-                         <span key={cid} className="text-[10px] bg-indigo-50 text-indigo-500 px-2 py-0.5 rounded-full font-bold">#{categories.find(c => c.id === cid)?.name}</span>
-                       ))}
-                     </div>
-                   )}
+                   <div className="mt-3 flex flex-wrap gap-1">
+                     {item.categoryIds?.map(cid => (
+                       <span key={cid} className="text-[10px] bg-indigo-50 text-indigo-500 px-2 py-0.5 rounded-full font-bold">#{categories.find(c => c.id === cid)?.name}</span>
+                     ))}
+                   </div>
                 </div>
               </div>
             )}
@@ -275,43 +271,51 @@ function VocabLibrary({ vocab, user, title, db, appId, categories, showToast }) 
   );
 }
 
-// --- 測驗組件 (四選一與範圍選擇) ---
+// --- 測驗與練習組件 ---
 function Quiz({ vocab, categories, db, user, appId }) {
-  const [config, setConfig] = useState({ range: 'all', type: 'choice' });
-  const [gameState, setGameState] = useState('config'); // 'config', 'playing', 'result'
+  const [config, setConfig] = useState({ range: 'all', type: 'choice', limit: '10' });
+  const [gameState, setGameState] = useState('config'); // config, playing_choice, playing_card, result
   const [questions, setQuestions] = useState([]);
   const [currentIdx, setCurrentIdx] = useState(0);
   const [score, setScore] = useState(0);
   const [selectedAns, setSelectedAns] = useState(null);
+  const [isFlipped, setIsFlipped] = useState(false);
 
-  const startQuiz = () => {
+  const startMode = () => {
     let pool = [...vocab];
     if (config.range === 'fav') pool = pool.filter(v => v.favorite);
     else if (config.range !== 'all') pool = pool.filter(v => v.categoryIds?.includes(config.range));
 
-    if (pool.length < 4) {
-      alert('該範圍單字不足 (至少需要 4 個單字才能開始測驗)');
+    if (pool.length < 1) {
+      alert('該範圍目前沒有單字');
       return;
     }
 
-    const shuffled = pool.sort(() => Math.random() - 0.5).slice(0, 10);
-    const qData = shuffled.map(q => {
-      const wrongOptions = pool.filter(v => v.id !== q.id).sort(() => Math.random() - 0.5).slice(0, 3);
-      const options = [q, ...wrongOptions].sort(() => Math.random() - 0.5);
-      return { question: q, options };
-    });
+    let shuffled = pool.sort(() => Math.random() - 0.5);
+    if (config.limit !== 'all') {
+      shuffled = shuffled.slice(0, parseInt(config.limit));
+    }
 
-    setQuestions(qData);
+    if (config.type === 'choice') {
+      if (pool.length < 4) { alert('四選一測驗至少需要4個單字才能隨機出選項'); return; }
+      const qData = shuffled.map(q => {
+        const wrong = pool.filter(v => v.id !== q.id).sort(() => Math.random() - 0.5).slice(0, 3);
+        return { question: q, options: [q, ...wrong].sort(() => Math.random() - 0.5) };
+      });
+      setQuestions(qData);
+      setGameState('playing_choice');
+    } else {
+      setQuestions(shuffled.map(q => ({ question: q })));
+      setGameState('playing_card');
+    }
     setCurrentIdx(0);
     setScore(0);
-    setGameState('playing');
   };
 
   const handleAnswer = (optionId) => {
     if (selectedAns !== null) return;
     setSelectedAns(optionId);
     if (optionId === questions[currentIdx].question.id) setScore(score + 1);
-    
     setTimeout(() => {
       if (currentIdx + 1 < questions.length) {
         setCurrentIdx(currentIdx + 1);
@@ -319,7 +323,7 @@ function Quiz({ vocab, categories, db, user, appId }) {
       } else {
         setGameState('result');
       }
-    }, 1200);
+    }, 1000);
   };
 
   const toggleFav = async (item) => {
@@ -327,54 +331,65 @@ function Quiz({ vocab, categories, db, user, appId }) {
   };
 
   if (gameState === 'config') return (
-    <div className="max-w-md mx-auto py-10 space-y-8 animate-in zoom-in-95">
+    <div className="max-w-md mx-auto py-10 space-y-8">
       <div className="text-center space-y-2">
-        <h2 className="text-4xl font-black text-slate-900">測驗模式</h2>
-        <p className="text-slate-500 font-medium">挑戰你的單字記憶力</p>
+        <h2 className="text-4xl font-black text-slate-900">學習模式</h2>
+        <p className="text-slate-500 font-medium">選擇適合你的練習方式</p>
       </div>
-      <div className="bg-white p-8 rounded-[2.5rem] shadow-xl space-y-6 border border-slate-50">
-        <div className="space-y-3">
-          <label className="text-sm font-black text-slate-800 flex items-center gap-2"><Layers size={18} className="text-indigo-600"/> 選擇範圍</label>
-          <select className="w-full p-4 bg-slate-50 rounded-2xl outline-none font-bold" value={config.range} onChange={e => setConfig({...config, range: e.target.value})}>
-            <option value="all">所有單字 ({vocab.length})</option>
-            <option value="fav">收藏單字 ({vocab.filter(v=>v.favorite).length})</option>
-            {categories.map(c => <option key={c.id} value={c.id}>{c.name} ({vocab.filter(v=>v.categoryIds?.includes(c.id)).length})</option>)}
-          </select>
+      <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-slate-50 space-y-6">
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-xs font-black text-slate-400 uppercase ml-2">學習方式</label>
+            <div className="grid grid-cols-2 gap-2">
+              <button onClick={() => setConfig({...config, type:'choice'})} className={`p-4 rounded-2xl border-2 font-bold ${config.type==='choice' ? 'border-indigo-600 bg-indigo-50 text-indigo-600' : 'border-slate-100'}`}>四選一測驗</button>
+              <button onClick={() => setConfig({...config, type:'card'})} className={`p-4 rounded-2xl border-2 font-bold ${config.type==='card' ? 'border-indigo-600 bg-indigo-50 text-indigo-600' : 'border-slate-100'}`}>翻卡練習</button>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-black text-slate-400 uppercase ml-2">選擇範圍</label>
+            <select className="w-full p-4 bg-slate-50 rounded-2xl font-bold outline-none" value={config.range} onChange={e => setConfig({...config, range: e.target.value})}>
+              <option value="all">所有單字 ({vocab.length})</option>
+              <option value="fav">收藏單字 ({vocab.filter(v=>v.favorite).length})</option>
+              {categories.map(c => <option key={c.id} value={c.id}>{c.name} ({vocab.filter(v=>v.categoryIds?.includes(c.id)).length})</option>)}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-xs font-black text-slate-400 uppercase ml-2">測驗題數</label>
+            <select className="w-full p-4 bg-slate-50 rounded-2xl font-bold outline-none" value={config.limit} onChange={e => setConfig({...config, limit: e.target.value})}>
+              <option value="10">10 題</option>
+              <option value="20">20 題</option>
+              <option value="50">50 題</option>
+              <option value="all">該範圍全部單字</option>
+            </select>
+          </div>
         </div>
-        <button onClick={startQuiz} className="w-full py-5 bg-indigo-600 text-white rounded-3xl font-black text-lg shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all">
-          開始測驗
+        <button onClick={startMode} className="w-full py-5 bg-indigo-600 text-white rounded-3xl font-black text-lg shadow-xl hover:bg-indigo-700 transition-all">
+          開始學習
         </button>
       </div>
     </div>
   );
 
-  if (gameState === 'playing') {
+  if (gameState === 'playing_choice') {
     const q = questions[currentIdx];
     return (
       <div className="max-w-2xl mx-auto py-6 space-y-8">
         <div className="flex justify-between items-center px-4">
-          <div className="text-slate-400 font-black tracking-widest text-sm">PROGRESS {currentIdx + 1}/{questions.length}</div>
-          <div className="text-indigo-600 font-black text-sm">SCORE: {score}</div>
+          <button onClick={()=>setGameState('config')} className="text-slate-400 font-bold flex items-center gap-1"><ChevronLeft size={16}/> 退出</button>
+          <div className="text-indigo-600 font-black">第 {currentIdx + 1}/{questions.length} 題</div>
         </div>
-        
         <div className="bg-white p-12 rounded-[3.5rem] shadow-2xl relative border border-slate-50 text-center space-y-4">
           <button onClick={() => toggleFav(q.question)} className="absolute top-8 right-8 p-2">
              <Star className={`w-8 h-8 ${q.question.favorite ? 'fill-yellow-400 text-yellow-400' : 'text-slate-200'}`} />
           </button>
-          <div className="text-indigo-600 font-black uppercase tracking-widest text-xs">{q.question.pos}</div>
-          <h2 className="text-6xl font-black text-slate-900 break-words">{q.question.word}</h2>
+          <h2 className="text-6xl font-black text-slate-900">{q.question.word}</h2>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {q.options.map(opt => (
-            <button 
-              key={opt.id}
-              onClick={() => handleAnswer(opt.id)}
-              className={`p-6 rounded-3xl font-bold text-lg text-left transition-all border-2 shadow-sm
-                ${selectedAns === null ? 'bg-white border-white hover:border-indigo-600 hover:shadow-md' : 
-                  opt.id === q.question.id ? 'bg-green-500 border-green-500 text-white scale-95 shadow-lg shadow-green-100' : 
-                  selectedAns === opt.id ? 'bg-red-500 border-red-500 text-white scale-95' : 'bg-white border-white opacity-50'}`}
-            >
+            <button key={opt.id} onClick={() => handleAnswer(opt.id)} className={`p-6 rounded-3xl font-bold text-lg text-left transition-all border-2 
+              ${selectedAns === null ? 'bg-white border-white hover:border-indigo-600' : 
+                opt.id === q.question.id ? 'bg-green-500 border-green-500 text-white' : 
+                selectedAns === opt.id ? 'bg-red-500 border-red-500 text-white' : 'bg-white opacity-50'}`}>
               {opt.definition}
             </button>
           ))}
@@ -383,18 +398,52 @@ function Quiz({ vocab, categories, db, user, appId }) {
     );
   }
 
+  if (gameState === 'playing_card') {
+    const q = questions[currentIdx];
+    return (
+      <div className="max-w-xl mx-auto py-6 space-y-8">
+        <div className="flex justify-between items-center px-4">
+          <button onClick={()=>setGameState('config')} className="text-slate-400 font-bold flex items-center gap-1"><ChevronLeft size={16}/> 退出</button>
+          <div className="text-indigo-600 font-black">{currentIdx + 1}/{questions.length}</div>
+        </div>
+        <div className="perspective-1000 h-80 cursor-pointer" onClick={() => setIsFlipped(!isFlipped)}>
+          <div className={`relative w-full h-full transition-all duration-500 preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
+             {/* Front */}
+             <div className="absolute inset-0 backface-hidden bg-white border border-slate-100 rounded-[3.5rem] shadow-2xl flex flex-col items-center justify-center p-8 space-y-4">
+               <span className="text-indigo-600 font-black uppercase text-xs tracking-widest">{q.question.pos}</span>
+               <h2 className="text-5xl font-black text-slate-900">{q.question.word}</h2>
+               <p className="text-slate-400 font-bold">點擊翻轉</p>
+             </div>
+             {/* Back */}
+             <div className="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-600 text-white rounded-[3.5rem] shadow-2xl flex flex-col items-center justify-center p-8 text-center space-y-4">
+               <h2 className="text-3xl font-black">{q.question.definition}</h2>
+               <div className="space-y-1">
+                 <p className="text-indigo-200 font-medium italic">{q.question.exampleEng}</p>
+                 <p className="text-indigo-100/60 text-sm">{q.question.exampleChn}</p>
+               </div>
+             </div>
+          </div>
+        </div>
+        <div className="flex justify-between items-center px-8">
+          <button onClick={() => toggleFav(q.question)} className="flex items-center gap-2 font-bold text-slate-400">
+             <Star className={q.question.favorite ? 'fill-yellow-400 text-yellow-400' : ''} /> 收藏
+          </button>
+          <div className="flex gap-4">
+            <button disabled={currentIdx === 0} onClick={() => { setCurrentIdx(currentIdx-1); setIsFlipped(false); }} className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 disabled:opacity-30"><ChevronLeft/></button>
+            <button onClick={() => { if(currentIdx+1 < questions.length) { setCurrentIdx(currentIdx+1); setIsFlipped(false); } else { setGameState('result'); } }} className="p-4 bg-indigo-600 text-white rounded-2xl shadow-lg"><ChevronRight/></button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-md mx-auto py-10 text-center space-y-8">
       <div className="bg-white p-12 rounded-[3.5rem] shadow-2xl space-y-6">
-        <div className="w-24 h-24 bg-indigo-600 rounded-3xl flex items-center justify-center mx-auto text-white">
-          <GraduationCap size={48} />
-        </div>
-        <h2 className="text-3xl font-black text-slate-800 tracking-tight">測驗完成！</h2>
-        <div className="text-6xl font-black text-indigo-600">{score * 10}<span className="text-2xl text-slate-300">/100</span></div>
-        <p className="text-slate-500 font-bold">答對了 {score} 題 / 共 {questions.length} 題</p>
-        <button onClick={() => setGameState('config')} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black hover:bg-slate-800 transition-all">
-          回主頁面
-        </button>
+        <h2 className="text-3xl font-black text-slate-800">學習完成！</h2>
+        {config.type === 'choice' && <div className="text-6xl font-black text-indigo-600">{Math.round((score/questions.length)*100)}</div>}
+        <p className="text-slate-500 font-bold">{config.type === 'choice' ? `答對了 ${score}/${questions.length} 題` : `練習完畢！一共複習了 ${questions.length} 個單字`}</p>
+        <button onClick={() => setGameState('config')} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black hover:bg-slate-800">回學習首頁</button>
       </div>
     </div>
   );
@@ -403,23 +452,18 @@ function Quiz({ vocab, categories, db, user, appId }) {
 // --- 分類管理組件 ---
 function CategoryManager({ categories, vocab, user, db, appId, showToast }) {
   const [newCatName, setNewCatName] = useState('');
-
   const addCategory = async () => {
     if (!newCatName.trim()) return;
-    await addDoc(collection(db, `artifacts/${appId}/users/${user.uid}/categories`), {
-      name: newCatName,
-      createdAt: serverTimestamp()
-    });
+    await addDoc(collection(db, `artifacts/${appId}/users/${user.uid}/categories`), { name: newCatName, createdAt: serverTimestamp() });
     setNewCatName('');
     showToast('分類已建立');
   };
-
   return (
     <div className="space-y-8">
       <h2 className="text-4xl font-black text-slate-900">分類管理</h2>
       <div className="flex gap-2">
-        <input className="flex-1 px-6 py-4 bg-white border border-slate-200 rounded-2xl outline-none shadow-sm focus:ring-2 focus:ring-indigo-500" placeholder="輸入新分類名稱..." value={newCatName} onChange={e => setNewCatName(e.target.value)} />
-        <button onClick={addCategory} className="px-6 py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"><Plus/></button>
+        <input className="flex-1 px-6 py-4 bg-white border border-slate-200 rounded-2xl outline-none" placeholder="輸入新分類名稱..." value={newCatName} onChange={e => setNewCatName(e.target.value)} />
+        <button onClick={addCategory} className="px-6 py-4 bg-indigo-600 text-white rounded-2xl font-bold"><Plus/></button>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {categories.map(cat => (
@@ -439,7 +483,7 @@ function CategoryManager({ categories, vocab, user, db, appId, showToast }) {
   );
 }
 
-// --- 新增單字組件 (支援單字直接加分類 & 批量新格式) ---
+// --- 新增單字組件 ---
 function AddVocab({ user, showToast, db, appId, setActiveTab, categories }) {
   const [mode, setMode] = useState('single');
   const [formData, setFormData] = useState({ word: '', pos: 'n.', definition: '', exampleEng: '', exampleChn: '', targetCat: '' });
@@ -451,116 +495,86 @@ function AddVocab({ user, showToast, db, appId, setActiveTab, categories }) {
     setIsProcessing(true);
     try {
       if (mode === 'single') {
-        const catIds = formData.targetCat ? [formData.targetCat] : [];
         await addDoc(collection(db, `artifacts/${appId}/users/${user.uid}/vocabulary`), {
-          word: formData.word,
-          pos: formData.pos,
-          definition: formData.definition,
-          exampleEng: formData.exampleEng,
-          exampleChn: formData.exampleChn,
+          ...formData,
+          categoryIds: formData.targetCat ? [formData.targetCat] : [],
           favorite: false,
-          categoryIds: catIds,
           createdAt: serverTimestamp()
         });
         showToast('新增成功');
-        setActiveTab('library');
       } else {
         const lines = bulkText.split('\n').filter(l => l.trim() !== '');
         for (const line of lines) {
-          // 格式：英文; 詞性; 中文; 例句; 例句翻譯; 分類名稱
-          const parts = line.split(';').map(p => p.trim());
-          if (parts.length >= 3) {
+          const p = line.split(';').map(s => s.trim());
+          if (p.length >= 3) {
             let catIds = [];
-            if (parts[5]) {
-              let existingCat = categories.find(c => c.name === parts[5]);
-              if (existingCat) {
-                catIds = [existingCat.id];
-              } else {
-                const newCatRef = await addDoc(collection(db, `artifacts/${appId}/users/${user.uid}/categories`), {
-                  name: parts[5], createdAt: serverTimestamp()
-                });
-                catIds = [newCatRef.id];
-              }
+            if (p[5]) {
+               let cat = categories.find(c => c.name === p[5]);
+               if (!cat) {
+                 const res = await addDoc(collection(db, `artifacts/${appId}/users/${user.uid}/categories`), { name: p[5], createdAt: serverTimestamp() });
+                 catIds = [res.id];
+               } else catIds = [cat.id];
             }
             await addDoc(collection(db, `artifacts/${appId}/users/${user.uid}/vocabulary`), {
-              word: parts[0], pos: parts[1] || 'n.', definition: parts[2],
-              exampleEng: parts[3] || '', exampleChn: parts[4] || '',
+              word: p[0], pos: p[1]||'n.', definition: p[2], exampleEng: p[3]||'', exampleChn: p[4]||'',
               favorite: false, categoryIds: catIds, createdAt: serverTimestamp()
             });
           }
         }
         showToast('批量新增成功');
-        setActiveTab('library');
       }
-    } catch (error) {
-      console.error(error);
-      showToast('操作失敗');
-    } finally {
-      setIsProcessing(false);
-    }
+      setActiveTab('library');
+    } catch (error) { showToast('發生錯誤'); } finally { setIsProcessing(false); }
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-8 animate-in slide-in-from-bottom-4">
+    <div className="max-w-2xl mx-auto space-y-8">
       <div className="text-center space-y-4">
         <h2 className="text-4xl font-black text-slate-900">{mode === 'single' ? '新增單字' : '批量匯入'}</h2>
-        <div className="inline-flex bg-white p-1.5 rounded-2xl border border-slate-100 shadow-sm">
-          <button onClick={() => setMode('single')} className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${mode === 'single' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>單一新增</button>
-          <button onClick={() => setMode('bulk')} className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${mode === 'bulk' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>批量匯入</button>
+        <div className="inline-flex bg-white p-1 rounded-2xl border border-slate-100 shadow-sm">
+          <button onClick={() => setMode('single')} className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${mode === 'single' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400'}`}>單一新增</button>
+          <button onClick={() => setMode('bulk')} className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${mode === 'bulk' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400'}`}>批量匯入</button>
         </div>
       </div>
-
       <form onSubmit={handleSubmit} className="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-xl space-y-6 border border-slate-50">
         {mode === 'single' ? (
-          <div className="space-y-5">
+          <div className="space-y-4">
             <div className="grid grid-cols-3 gap-4">
-              <div className="col-span-2 space-y-2">
-                <label className="text-xs font-black text-slate-400 ml-2 uppercase">Word</label>
-                <input required className="w-full px-6 py-4 bg-slate-50 border border-transparent rounded-2xl outline-none focus:bg-white focus:border-indigo-200 transition-all" value={formData.word} onChange={e => setFormData({...formData, word: e.target.value})} />
+              <div className="col-span-2 space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase ml-2">WORD</label>
+                <input required className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" value={formData.word} onChange={e => setFormData({...formData, word: e.target.value})} />
               </div>
-              <div className="space-y-2">
-                <label className="text-xs font-black text-slate-400 ml-2 uppercase">POS</label>
-                <select className="w-full px-4 py-4 bg-slate-50 border border-transparent rounded-2xl outline-none" value={formData.pos} onChange={e => setFormData({...formData, pos: e.target.value})}>
+              <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase ml-2">POS</label>
+                <select className="w-full px-4 py-4 bg-slate-50 rounded-2xl outline-none" value={formData.pos} onChange={e => setFormData({...formData, pos: e.target.value})}>
                   {['n.', 'v.', 'adj.', 'adv.', 'phr.'].map(p => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 ml-2 uppercase">Definition</label>
-              <input required className="w-full px-6 py-4 bg-slate-50 border border-transparent rounded-2xl outline-none focus:bg-white focus:border-indigo-200 transition-all" value={formData.definition} onChange={e => setFormData({...formData, definition: e.target.value})} />
+            <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase ml-2">DEFINITION</label>
+              <input required className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" value={formData.definition} onChange={e => setFormData({...formData, definition: e.target.value})} />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-               <div className="space-y-2">
-                 <label className="text-xs font-black text-slate-400 ml-2 uppercase">Example (EN)</label>
-                 <input className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" value={formData.exampleEng} onChange={e => setFormData({...formData, exampleEng: e.target.value})} />
-               </div>
-               <div className="space-y-2">
-                 <label className="text-xs font-black text-slate-400 ml-2 uppercase">Example (CH)</label>
-                 <input className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" value={formData.exampleChn} onChange={e => setFormData({...formData, exampleChn: e.target.value})} />
-               </div>
+            <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase ml-2">EXAMPLE (EN)</label>
+              <input className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" value={formData.exampleEng} onChange={e => setFormData({...formData, exampleEng: e.target.value})} />
             </div>
-            <div className="space-y-2">
-              <label className="text-xs font-black text-slate-400 ml-2 uppercase flex items-center gap-1"><Tags size={12}/> 選擇分類 (非必填)</label>
+            <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase ml-2">EXAMPLE (CH)</label>
+              <input className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none" value={formData.exampleChn} onChange={e => setFormData({...formData, exampleChn: e.target.value})} />
+            </div>
+            <div className="space-y-1"><label className="text-[10px] font-black text-slate-400 uppercase ml-2">CATEGORY (OPTIONAL)</label>
               <select className="w-full px-6 py-4 bg-slate-50 rounded-2xl outline-none font-bold" value={formData.targetCat} onChange={e => setFormData({...formData, targetCat: e.target.value})}>
-                <option value="">不加入特定分類</option>
+                <option value="">不指定分類</option>
                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
           </div>
         ) : (
           <div className="space-y-4">
-            <div className="p-4 bg-indigo-50 rounded-2xl border border-indigo-100 flex items-start gap-3">
-              <AlertCircle className="text-indigo-500 shrink-0 mt-0.5" size={18} />
-              <div className="text-[10px] md:text-xs">
-                <p className="font-black text-indigo-700">批量格式：</p>
-                <p className="text-indigo-600 mt-1 font-mono bg-white/50 p-2 rounded">英文; 詞性; 中文; 例句; 例句翻譯; 分類名稱</p>
-              </div>
+            <div className="p-4 bg-indigo-50 rounded-2xl text-[10px] text-indigo-700 leading-relaxed">
+              批量格式：英文; 詞性; 中文; 例句; 例句翻譯; 分類名稱
             </div>
-            <textarea required rows="8" className="w-full px-6 py-4 bg-slate-50 rounded-3xl outline-none font-mono text-xs md:text-sm focus:ring-2 focus:ring-indigo-500" placeholder="apple; n.; 蘋果; I like apples.; 我喜歡蘋果; 水果" value={bulkText} onChange={e => setBulkText(e.target.value)} />
+            <textarea required rows="8" className="w-full px-6 py-4 bg-slate-50 rounded-3xl outline-none font-mono text-sm" placeholder="apple; n.; 蘋果; I like apples.; 我喜歡蘋果; 水果" value={bulkText} onChange={e => setBulkText(e.target.value)} />
           </div>
         )}
-        <button type="submit" disabled={isProcessing} className="w-full py-5 bg-indigo-600 text-white rounded-3xl font-black text-lg shadow-xl shadow-indigo-100 hover:bg-indigo-700 transition-all active:scale-95 disabled:opacity-50">
-          {isProcessing ? '處理中...' : '儲存到雲端庫'}
+        <button type="submit" disabled={isProcessing} className="w-full py-5 bg-indigo-600 text-white rounded-3xl font-black text-lg hover:bg-indigo-700 disabled:opacity-50">
+          {isProcessing ? '處理中...' : '儲存到單字雲'}
         </button>
       </form>
     </div>

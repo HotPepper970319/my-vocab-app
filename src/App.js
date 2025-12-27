@@ -12,7 +12,7 @@ import {
   BookOpen, Star, PlusCircle, GraduationCap, Search, 
   Trash2, CheckCircle2, LogOut, X, AlertCircle,
   Folder, Tags, Plus, Layers, Menu, 
-  RotateCcw, ChevronLeft, ChevronRight, Play
+  RotateCcw, ChevronLeft, ChevronRight, Play, FolderPlus
 } from 'lucide-react';
 
 // --- Firebase 配置 ---
@@ -87,7 +87,7 @@ export default function App() {
         <button onClick={() => signInWithPopup(auth, googleProvider)} className="w-full flex items-center justify-center gap-3 py-4 bg-white border-2 border-slate-100 rounded-2xl font-bold text-slate-700 hover:bg-slate-50 transition-all shadow-sm">
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5" alt="G" /> 使用 Google 登入
         </button>
-        <div className="pt-4 text-slate-300 text-xs font-mono">v1.2.2 (beta)</div>
+        <div className="pt-4 text-slate-300 text-xs font-mono">v1.2.3 (beta)</div>
       </div>
     </div>
   );
@@ -126,7 +126,7 @@ export default function App() {
           <button onClick={() => setShowLogoutConfirm(true)} className="w-full flex items-center gap-3 px-4 py-2 text-slate-400 hover:text-red-500 text-sm font-bold">
             <LogOut size={16} /> 登出帳號
           </button>
-          <div className="text-center text-[10px] text-slate-300 font-mono">v1.2.2 (beta)</div>
+          <div className="text-center text-[10px] text-slate-300 font-mono">v1.2.3 (beta)</div>
         </div>
       </aside>
 
@@ -166,6 +166,13 @@ export default function App() {
           <CheckCircle2 className="w-5 h-5 text-green-400" /> {message}
         </div>
       )}
+
+      <style>{`
+        .perspective-1000 { perspective: 1000px; }
+        .backface-hidden { backface-visibility: hidden; }
+        .preserve-3d { transform-style: preserve-3d; }
+        .rotate-y-180 { transform: rotateY(180deg); }
+      `}</style>
     </div>
   );
 }
@@ -177,6 +184,7 @@ function VocabLibrary({ vocab, user, title, db, appId, categories, showToast }) 
   const [posFilter, setPosFilter] = useState('all');
   const [selectedIds, setSelectedIds] = useState([]);
   const [isBulkMode, setIsBulkMode] = useState(false);
+  const [activeCatSelector, setActiveCatSelector] = useState(null);
 
   const filtered = vocab
     .filter(v => (posFilter === 'all' || v.pos === posFilter))
@@ -185,6 +193,15 @@ function VocabLibrary({ vocab, user, title, db, appId, categories, showToast }) 
 
   const toggleSelect = (id) => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+
+  const handleAddCategory = async (vId, catId) => {
+    if (!catId) return;
+    await updateDoc(doc(db, `artifacts/${appId}/users/${user.uid}/vocabulary`, vId), {
+      categoryIds: arrayUnion(catId)
+    });
+    showToast(`已成功加入分類`);
+    setActiveCatSelector(null);
   };
 
   const handleBulkAddCategory = async (catId) => {
@@ -232,33 +249,48 @@ function VocabLibrary({ vocab, user, title, db, appId, categories, showToast }) 
 
       <div className="grid gap-3">
         {filtered.map(item => (
-          <div key={item.id} className={`bg-white border rounded-3xl transition-all ${selectedIds.includes(item.id) ? 'border-indigo-600 ring-2 ring-indigo-100' : 'border-slate-100 shadow-sm'}`}>
-            <div className="p-4 md:p-5 flex items-center justify-between gap-3">
+          <div key={item.id} className={`bg-white border rounded-3xl transition-all ${selectedIds.includes(item.id) ? 'border-indigo-600 ring-2 ring-indigo-100' : 'border-slate-100 shadow-sm'} overflow-hidden`}>
+            {/* 卡片點擊任一處均可展開 (排除按鈕區) */}
+            <div className="relative flex items-center justify-between gap-3 px-4 py-4 md:px-5 md:py-5 cursor-pointer" onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}>
               <div className="flex items-center gap-3">
                 {isBulkMode ? (
-                  <button onClick={() => toggleSelect(item.id)} className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center ${selectedIds.includes(item.id) ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-200'}`}>
+                  <button onClick={(e) => { e.stopPropagation(); toggleSelect(item.id); }} className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center ${selectedIds.includes(item.id) ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-200'}`}>
                     {selectedIds.includes(item.id) && <CheckCircle2 size={16} />}
                   </button>
                 ) : (
-                  <button onClick={(e) => toggleFav(e, item)} className="p-1"><Star className={`w-6 h-6 ${item.favorite ? 'fill-yellow-400 text-yellow-400' : 'text-slate-200'}`} /></button>
+                  <button onClick={(e) => toggleFav(e, item)} className="p-1 relative z-10"><Star className={`w-6 h-6 ${item.favorite ? 'fill-yellow-400 text-yellow-400' : 'text-slate-200'}`} /></button>
                 )}
-                <div className="cursor-pointer" onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}>
-                  <h3 className="font-black text-lg text-slate-800">{item.word} <span className="text-[10px] bg-slate-100 text-slate-500 px-1 py-0.5 rounded">{item.pos}</span></h3>
-                  <p className="text-slate-500 text-sm">{item.definition}</p>
+                <div className="pointer-events-none">
+                  <h3 className="font-black text-lg text-slate-800">{item.word} <span className="text-[10px] bg-slate-100 text-slate-500 px-1 py-0.5 rounded uppercase">{item.pos}</span></h3>
+                  <p className="text-slate-500 text-sm truncate max-w-[200px] sm:max-w-md">{item.definition}</p>
                 </div>
               </div>
+
               {!isBulkMode && (
-                <button onClick={async () => { if(window.confirm('確定刪除？')) await deleteDoc(doc(db, `artifacts/${appId}/users/${user.uid}/vocabulary`, item.id)); }} className="text-slate-200 hover:text-red-500"><Trash2 size={18} /></button>
+                <div className="flex items-center gap-2 relative z-10">
+                  {activeCatSelector === item.id ? (
+                    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl">
+                      <select autoFocus className="text-xs bg-transparent border-none outline-none font-bold text-slate-600 px-1" onChange={(e) => handleAddCategory(item.id, e.target.value)} onBlur={() => setActiveCatSelector(null)} value="">
+                         <option value="" disabled>分類</option>
+                         {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                      </select>
+                      <button onClick={(e) => { e.stopPropagation(); setActiveCatSelector(null); }} className="text-slate-400"><X size={14}/></button>
+                    </div>
+                  ) : (
+                    <button onClick={(e) => { e.stopPropagation(); setActiveCatSelector(item.id); }} className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all" title="加入分類"><FolderPlus size={18} /></button>
+                  )}
+                  <button onClick={async (e) => { e.stopPropagation(); if(window.confirm('確定刪除？')) await deleteDoc(doc(db, `artifacts/${appId}/users/${user.uid}/vocabulary`, item.id)); }} className="p-2 text-slate-200 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={18} /></button>
+                </div>
               )}
             </div>
             {expandedId === item.id && (
-              <div className="px-14 pb-5 pt-0 text-sm">
+              <div className="px-5 pb-5 md:px-14">
                 <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                   <p className="font-bold text-slate-700">{item.exampleEng}</p>
-                   <p className="text-slate-400">{item.exampleChn}</p>
+                   <p className="font-bold text-slate-700 leading-relaxed">{item.exampleEng}</p>
+                   <p className="text-slate-400 text-sm mt-1">{item.exampleChn}</p>
                    <div className="mt-3 flex flex-wrap gap-1">
                      {item.categoryIds?.map(cid => (
-                       <span key={cid} className="text-[10px] bg-indigo-50 text-indigo-500 px-2 py-0.5 rounded-full font-bold">#{categories.find(c => c.id === cid)?.name}</span>
+                       <span key={cid} className="text-[10px] bg-indigo-50 text-indigo-500 px-2 py-0.5 rounded-full font-bold">#{categories.find(c => c.id === cid)?.name || '未命名'}</span>
                      ))}
                    </div>
                 </div>
@@ -376,21 +408,22 @@ function Quiz({ vocab, categories, db, user, appId }) {
       <div className="max-w-2xl mx-auto py-6 space-y-8">
         <div className="flex justify-between items-center px-4">
           <button onClick={()=>setGameState('config')} className="text-slate-400 font-bold flex items-center gap-1"><ChevronLeft size={16}/> 退出</button>
-          <div className="text-indigo-600 font-black">第 {currentIdx + 1}/{questions.length} 題</div>
+          <div className="text-indigo-600 font-black">進度 {currentIdx + 1} / {questions.length}</div>
         </div>
-        <div className="bg-white p-12 rounded-[3.5rem] shadow-2xl relative border border-slate-50 text-center space-y-4">
+        <div className="bg-white p-12 rounded-[3.5rem] shadow-2xl relative border border-slate-50 text-center flex flex-col items-center justify-center min-h-[280px] gap-2">
           <button onClick={() => toggleFav(q.question)} className="absolute top-8 right-8 p-2">
              <Star className={`w-8 h-8 ${q.question.favorite ? 'fill-yellow-400 text-yellow-400' : 'text-slate-200'}`} />
           </button>
-          <h2 className="text-6xl font-black text-slate-900">{q.question.word}</h2>
+          <span className="text-xs font-black text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-widest">{q.question.pos}</span>
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 break-all">{q.question.word}</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {q.options.map(opt => (
-            <button key={opt.id} onClick={() => handleAnswer(opt.id)} className={`p-6 rounded-3xl font-bold text-lg text-left transition-all border-2 
+            <button key={opt.id} onClick={() => handleAnswer(opt.id)} className={`p-6 rounded-3xl font-bold text-lg text-left transition-all border-2 shadow-sm
               ${selectedAns === null ? 'bg-white border-white hover:border-indigo-600' : 
                 opt.id === q.question.id ? 'bg-green-500 border-green-500 text-white' : 
                 selectedAns === opt.id ? 'bg-red-500 border-red-500 text-white' : 'bg-white opacity-50'}`}>
-              {opt.definition}
+              <span className="text-sm opacity-60 mr-2 uppercase">{opt.pos}</span> {opt.definition}
             </button>
           ))}
         </div>
@@ -404,29 +437,34 @@ function Quiz({ vocab, categories, db, user, appId }) {
       <div className="max-w-xl mx-auto py-6 space-y-8">
         <div className="flex justify-between items-center px-4">
           <button onClick={()=>setGameState('config')} className="text-slate-400 font-bold flex items-center gap-1"><ChevronLeft size={16}/> 退出</button>
-          <div className="text-indigo-600 font-black">{currentIdx + 1}/{questions.length}</div>
+          <div className="text-indigo-600 font-black">{currentIdx + 1} / {questions.length}</div>
         </div>
-        <div className="perspective-1000 h-80 cursor-pointer" onClick={() => setIsFlipped(!isFlipped)}>
+        <div className="perspective-1000 h-[400px] cursor-pointer" onClick={() => setIsFlipped(!isFlipped)}>
           <div className={`relative w-full h-full transition-all duration-500 preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
-             {/* Front */}
+             {/* Front: 顯示英文及詞性 */}
              <div className="absolute inset-0 backface-hidden bg-white border border-slate-100 rounded-[3.5rem] shadow-2xl flex flex-col items-center justify-center p-8 space-y-4">
-               <span className="text-indigo-600 font-black uppercase text-xs tracking-widest">{q.question.pos}</span>
-               <h2 className="text-5xl font-black text-slate-900">{q.question.word}</h2>
-               <p className="text-slate-400 font-bold">點擊翻轉</p>
+               <span className="text-indigo-600 font-black uppercase text-xs tracking-widest bg-indigo-50 px-3 py-1 rounded-full">{q.question.pos}</span>
+               <h2 className="text-4xl md:text-5xl font-black text-slate-900 break-all">{q.question.word}</h2>
+               <p className="text-slate-400 font-bold animate-pulse mt-8">點擊翻轉查看解釋</p>
              </div>
-             {/* Back */}
-             <div className="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-600 text-white rounded-[3.5rem] shadow-2xl flex flex-col items-center justify-center p-8 text-center space-y-4">
-               <h2 className="text-3xl font-black">{q.question.definition}</h2>
-               <div className="space-y-1">
-                 <p className="text-indigo-200 font-medium italic">{q.question.exampleEng}</p>
-                 <p className="text-indigo-100/60 text-sm">{q.question.exampleChn}</p>
+             {/* Back: 顯示中文和例句 */}
+             <div className="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-600 text-white rounded-[3.5rem] shadow-2xl flex flex-col items-center justify-center p-10 text-center space-y-6 overflow-hidden">
+               <div className="space-y-2">
+                 <span className="text-indigo-200 text-[10px] font-black uppercase tracking-[0.2em]">DEFINITION</span>
+                 <h2 className="text-3xl md:text-4xl font-black">{q.question.definition}</h2>
                </div>
+               <div className="w-12 h-1 bg-white/20 rounded-full"></div>
+               <div className="space-y-3 max-w-sm">
+                 <p className="text-indigo-50 font-bold italic leading-relaxed text-sm md:text-base">"{q.question.exampleEng}"</p>
+                 <p className="text-indigo-200/80 text-xs md:text-sm font-medium">{q.question.exampleChn}</p>
+               </div>
+               <p className="text-white/40 text-[10px] font-bold mt-4">點擊翻回正面</p>
              </div>
           </div>
         </div>
         <div className="flex justify-between items-center px-8">
           <button onClick={() => toggleFav(q.question)} className="flex items-center gap-2 font-bold text-slate-400">
-             <Star className={q.question.favorite ? 'fill-yellow-400 text-yellow-400' : ''} /> 收藏
+             <Star className={q.question.favorite ? 'fill-yellow-400 text-yellow-400' : ''} /> 收藏單字
           </button>
           <div className="flex gap-4">
             <button disabled={currentIdx === 0} onClick={() => { setCurrentIdx(currentIdx-1); setIsFlipped(false); }} className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 disabled:opacity-30"><ChevronLeft/></button>
@@ -439,11 +477,19 @@ function Quiz({ vocab, categories, db, user, appId }) {
 
   return (
     <div className="max-w-md mx-auto py-10 text-center space-y-8">
-      <div className="bg-white p-12 rounded-[3.5rem] shadow-2xl space-y-6">
+      <div className="bg-white p-12 rounded-[3.5rem] shadow-2xl space-y-6 border border-slate-50">
         <h2 className="text-3xl font-black text-slate-800">學習完成！</h2>
-        {config.type === 'choice' && <div className="text-6xl font-black text-indigo-600">{Math.round((score/questions.length)*100)}</div>}
-        <p className="text-slate-500 font-bold">{config.type === 'choice' ? `答對了 ${score}/${questions.length} 題` : `練習完畢！一共複習了 ${questions.length} 個單字`}</p>
-        <button onClick={() => setGameState('config')} className="w-full py-4 bg-slate-900 text-white rounded-2xl font-black hover:bg-slate-800">回學習首頁</button>
+        {config.type === 'choice' && (
+          <div className="relative inline-block">
+            <svg className="w-32 h-32 transform -rotate-90">
+              <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-slate-100" />
+              <circle cx="64" cy="64" r="58" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-indigo-600" strokeDasharray={364} strokeDashoffset={364 - (364 * score) / questions.length} strokeLinecap="round" />
+            </svg>
+            <div className="absolute inset-0 flex items-center justify-center text-3xl font-black text-indigo-600">{Math.round((score/questions.length)*100)}%</div>
+          </div>
+        )}
+        <p className="text-slate-500 font-bold text-lg">{config.type === 'choice' ? `答對了 ${score} / ${questions.length} 題` : `複習完畢！一共看了 ${questions.length} 個單字`}</p>
+        <button onClick={() => setGameState('config')} className="w-full py-5 bg-slate-900 text-white rounded-2xl font-black hover:bg-slate-800 transition-colors">回學習首頁</button>
       </div>
     </div>
   );
@@ -462,12 +508,12 @@ function CategoryManager({ categories, vocab, user, db, appId, showToast }) {
     <div className="space-y-8">
       <h2 className="text-4xl font-black text-slate-900">分類管理</h2>
       <div className="flex gap-2">
-        <input className="flex-1 px-6 py-4 bg-white border border-slate-200 rounded-2xl outline-none" placeholder="輸入新分類名稱..." value={newCatName} onChange={e => setNewCatName(e.target.value)} />
-        <button onClick={addCategory} className="px-6 py-4 bg-indigo-600 text-white rounded-2xl font-bold"><Plus/></button>
+        <input className="flex-1 px-6 py-4 bg-white border border-slate-200 rounded-2xl outline-none shadow-sm focus:ring-2 focus:ring-indigo-500 transition-all" placeholder="輸入新分類名稱..." value={newCatName} onChange={e => setNewCatName(e.target.value)} />
+        <button onClick={addCategory} className="px-6 py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-colors"><Plus/></button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {categories.map(cat => (
-          <div key={cat.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between group">
+          <div key={cat.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-md transition-all">
              <div className="flex items-center gap-4">
                <div className="p-3 bg-indigo-50 rounded-2xl text-indigo-600"><Folder size={24}/></div>
                <div>
@@ -573,7 +619,7 @@ function AddVocab({ user, showToast, db, appId, setActiveTab, categories }) {
             <textarea required rows="8" className="w-full px-6 py-4 bg-slate-50 rounded-3xl outline-none font-mono text-sm" placeholder="apple; n.; 蘋果; I like apples.; 我喜歡蘋果; 水果" value={bulkText} onChange={e => setBulkText(e.target.value)} />
           </div>
         )}
-        <button type="submit" disabled={isProcessing} className="w-full py-5 bg-indigo-600 text-white rounded-3xl font-black text-lg hover:bg-indigo-700 disabled:opacity-50">
+        <button type="submit" disabled={isProcessing} className="w-full py-5 bg-indigo-600 text-white rounded-3xl font-black text-lg hover:bg-indigo-700 disabled:opacity-50 transition-all shadow-lg">
           {isProcessing ? '處理中...' : '儲存到單字雲'}
         </button>
       </form>

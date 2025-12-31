@@ -144,12 +144,12 @@ export default function App() {
       showToast('分類建立成功 (Demo)');
   }
 
-  if (loading) return <div className="flex h-screen items-center justify-center font-bold text-indigo-600 animate-pulse">載入中...</div>;
+  if (loading) return <div className="flex h-screen items-center justify-center font-bold text-violet-600 animate-pulse">載入中...</div>;
 
   if (!user) return (
     <div className="flex h-screen flex-col items-center justify-center bg-slate-50 p-4 font-sans">
       <div className="bg-white p-10 rounded-[3rem] shadow-2xl text-center space-y-6 max-w-sm w-full">
-        <div className="bg-indigo-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-indigo-200">
+        <div className="bg-violet-600 w-20 h-20 rounded-3xl flex items-center justify-center mx-auto shadow-lg shadow-violet-200">
             <GraduationCap className="text-white w-10 h-10" />
         </div>
         <div>
@@ -160,7 +160,7 @@ export default function App() {
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5 group-hover:scale-110 transition-transform" alt="G" /> 
           使用 Google 登入
         </button>
-        <div className="pt-4 text-slate-300 text-xs font-mono">v2.0.0 (demo)</div>
+        <div className="pt-4 text-slate-300 text-xs font-mono">v1.3.1 (Alpha)</div>
       </div>
     </div>
   );
@@ -179,24 +179,25 @@ export default function App() {
       <aside className={`fixed inset-y-0 left-0 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 w-64 bg-white border-r border-slate-200 transition-transform duration-300 ease-in-out z-50 flex flex-col shadow-2xl md:shadow-none`}>
         <div className="p-6 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="bg-indigo-600 p-2 rounded-xl shadow-lg shadow-indigo-200"><GraduationCap className="text-white w-6 h-6" /></div>
+            <div className="bg-violet-600 p-2 rounded-xl shadow-lg shadow-violet-200"><GraduationCap className="text-white w-6 h-6" /></div>
             <h1 className="font-bold text-xl text-slate-800 tracking-tight">單字雲</h1>
           </div>
           <button className="md:hidden text-slate-400 hover:text-slate-600" onClick={() => setIsSidebarOpen(false)}><X size={24}/></button>
         </div>
         <nav className="flex-1 px-4 space-y-2 py-4">
           {navigation.map(item => (
-            <button key={item.id} onClick={() => { setActiveTab(item.id); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 ${activeTab === item.id ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200 scale-100' : 'text-slate-500 hover:bg-slate-50 hover:scale-[1.02]'}`}>
+            <button key={item.id} onClick={() => { setActiveTab(item.id); setIsSidebarOpen(false); }} className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-200 ${activeTab === item.id ? 'bg-violet-600 text-white shadow-lg shadow-violet-200 scale-100' : 'text-slate-500 hover:bg-slate-50 hover:scale-[1.02]'}`}>
               {React.cloneElement(item.icon, { size: 20, strokeWidth: 2.5 })} <span className="font-bold text-sm">{item.label}</span>
             </button>
           ))}
         </nav>
-        <div className="p-4 border-t border-slate-100 space-y-4">
+        <div className="p-4 border-t border-slate-100 space-y-2">
+          {/* 版本顯示改到這裡 */}
+          <div className="px-1 text-xs font-bold text-slate-300 font-mono text-center mb-1">v1.3.1 (Alpha)</div>
           <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl truncate border border-slate-100">
              <img src={user.photoURL} className="w-8 h-8 rounded-full shadow-sm bg-white" alt="avt" />
              <div className="flex flex-col truncate">
                 <span className="text-xs font-black text-slate-700 truncate">{user.displayName}</span>
-                {/* Free Plan 已移除 */}
              </div>
           </div>
           <button onClick={() => setShowLogoutConfirm(true)} className="w-full flex items-center justify-center gap-2 px-4 py-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all text-xs font-bold">
@@ -208,7 +209,7 @@ export default function App() {
       {/* Mobile Top Bar */}
       <div className="md:hidden bg-white/80 backdrop-blur-md border-b border-slate-200 p-4 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-2">
-          <div className="bg-indigo-600 p-1.5 rounded-lg"><GraduationCap className="text-white w-5 h-5" /></div>
+          <div className="bg-violet-600 p-1.5 rounded-lg"><GraduationCap className="text-white w-5 h-5" /></div>
           <span className="font-black text-slate-800 tracking-tight">學測單字雲</span>
         </div>
         <button onClick={() => setIsSidebarOpen(true)} className="p-2 bg-slate-100 rounded-xl text-slate-600 active:scale-95 transition-transform"><Menu size={20}/></button>
@@ -319,18 +320,18 @@ function VocabLibrary({ vocab, user, title, db, appId, categories, showToast, mo
             <h2 className="text-3xl md:text-4xl font-black text-slate-900">{title}</h2>
             <p className="text-slate-400 font-bold mt-1 text-sm">共 {filtered.length} 個單字</p>
         </div>
-        <button onClick={() => { setIsBulkMode(!isBulkMode); setSelectedIds([]); }} className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${isBulkMode ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
+        <button onClick={() => { setIsBulkMode(!isBulkMode); setSelectedIds([]); }} className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${isBulkMode ? 'bg-violet-600 text-white shadow-lg shadow-violet-200' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
           {isBulkMode ? '取消選取' : '批量管理'}
         </button>
       </div>
 
       <div className="relative group">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={20} />
-        <input type="text" placeholder="搜尋單字、定義..." className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl shadow-sm outline-none focus:ring-2 focus:ring-indigo-500 transition-all font-medium text-slate-700 placeholder:text-slate-300" value={search} onChange={(e) => setSearch(e.target.value)} />
+        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-violet-500 transition-colors" size={20} />
+        <input type="text" placeholder="搜尋單字、定義..." className="w-full pl-12 pr-4 py-4 bg-white border border-slate-200 rounded-2xl shadow-sm outline-none focus:ring-2 focus:ring-violet-500 transition-all font-medium text-slate-700 placeholder:text-slate-300" value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          {['all', 'n.', 'v.', 'adj.', 'adv.', 'phr.'].map(p => (
+          {['all', 'n.', 'v.', 'adj.', 'adv.', 'phr.', 'conj.'].map(p => (
               <button key={p} onClick={()=>setPosFilter(p)} className={`px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all ${posFilter===p ? 'bg-slate-800 text-white shadow-md' : 'bg-white text-slate-400 border border-slate-200 hover:border-slate-300'}`}>
                   {p === 'all' ? '全部' : p}
               </button>
@@ -341,7 +342,7 @@ function VocabLibrary({ vocab, user, title, db, appId, categories, showToast, mo
         <div className="sticky top-4 z-30 bg-slate-800 text-white p-4 rounded-2xl flex flex-col md:flex-row items-center justify-between gap-4 shadow-2xl animate-in slide-in-from-top-5">
           <span className="font-bold flex items-center gap-2"><CheckCircle2 className="text-green-400"/> 已選取 {selectedIds.length} 個單字</span>
           <div className="flex gap-2 w-full md:w-auto">
-            <select className="flex-1 md:w-48 px-3 py-2 bg-slate-700 text-white rounded-xl border border-slate-600 text-sm font-bold outline-none focus:ring-2 focus:ring-indigo-500" onChange={(e) => handleBulkAddCategory(e.target.value)} value="">
+            <select className="flex-1 md:w-48 px-3 py-2 bg-slate-700 text-white rounded-xl border border-slate-600 text-sm font-bold outline-none focus:ring-2 focus:ring-violet-500" onChange={(e) => handleBulkAddCategory(e.target.value)} value="">
               <option value="" disabled>加入分類至...</option>
               {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
@@ -352,11 +353,11 @@ function VocabLibrary({ vocab, user, title, db, appId, categories, showToast, mo
       <div className="grid gap-3">
         {filtered.length === 0 && <div className="text-center py-20 text-slate-300 font-bold">沒有找到相關單字</div>}
         {filtered.map(item => (
-          <div key={item.id} className={`bg-white border rounded-[1.5rem] transition-all duration-300 ${selectedIds.includes(item.id) ? 'border-indigo-600 ring-2 ring-indigo-100 bg-indigo-50/10' : 'border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100'} overflow-hidden`}>
+          <div key={item.id} className={`bg-white border rounded-[1.5rem] transition-all duration-300 ${selectedIds.includes(item.id) ? 'border-violet-600 ring-2 ring-violet-100 bg-violet-50/10' : 'border-slate-100 shadow-sm hover:shadow-md hover:border-violet-100'} overflow-hidden`}>
             <div className="relative flex items-center justify-between gap-3 px-4 py-4 md:px-6 md:py-5 cursor-pointer" onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}>
               <div className="flex items-center gap-4 flex-1 min-w-0">
                 {isBulkMode ? (
-                  <button onClick={(e) => { e.stopPropagation(); toggleSelect(item.id); }} className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${selectedIds.includes(item.id) ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-200 hover:border-indigo-400'}`}>
+                  <button onClick={(e) => { e.stopPropagation(); toggleSelect(item.id); }} className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${selectedIds.includes(item.id) ? 'bg-violet-600 border-violet-600 text-white' : 'border-slate-200 hover:border-violet-400'}`}>
                     {selectedIds.includes(item.id) && <CheckCircle2 size={14} />}
                   </button>
                 ) : (
@@ -382,7 +383,7 @@ function VocabLibrary({ vocab, user, title, db, appId, categories, showToast, mo
                       <button onClick={(e) => { e.stopPropagation(); setActiveCatSelector(null); }} className="text-slate-400 hover:text-slate-600"><X size={14}/></button>
                     </div>
                   ) : (
-                    <button onClick={(e) => { e.stopPropagation(); setActiveCatSelector(item.id); }} className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all" title="加入分類"><FolderPlus size={18} /></button>
+                    <button onClick={(e) => { e.stopPropagation(); setActiveCatSelector(item.id); }} className="p-2 text-slate-300 hover:text-violet-600 hover:bg-violet-50 rounded-xl transition-all" title="加入分類"><FolderPlus size={18} /></button>
                   )}
                   <button onClick={(e) => handleDelete(e, item.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={18} /></button>
                 </div>
@@ -392,7 +393,7 @@ function VocabLibrary({ vocab, user, title, db, appId, categories, showToast, mo
               <div className="px-5 pb-5 md:px-14">
                 <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100/50">
                    <div className="flex gap-3 items-start">
-                       <div className="w-1 h-full bg-indigo-200 rounded-full min-h-[40px]"></div>
+                       <div className="w-1 h-full bg-violet-200 rounded-full min-h-[40px]"></div>
                        <div>
                            <p className="font-bold text-slate-700 leading-relaxed text-lg">"{item.exampleEng}"</p>
                            <p className="text-slate-400 text-sm mt-1">{item.exampleChn}</p>
@@ -493,13 +494,13 @@ function Quiz({ vocab, categories, db, user, appId, mockToggleFav }) {
           <div className="space-y-2">
             <label className="text-xs font-black text-slate-400 uppercase ml-2">學習方式</label>
             <div className="grid grid-cols-2 gap-3">
-              <button onClick={() => setConfig({...config, type:'choice'})} className={`p-4 rounded-2xl border-2 font-bold transition-all ${config.type==='choice' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-md' : 'border-slate-100 text-slate-400 hover:bg-slate-50'}`}>
+              <button onClick={() => setConfig({...config, type:'choice'})} className={`p-4 rounded-2xl border-2 font-bold transition-all ${config.type==='choice' ? 'border-violet-600 bg-violet-50 text-violet-600 shadow-md' : 'border-slate-100 text-slate-400 hover:bg-slate-50'}`}>
                   <div className="flex flex-col items-center gap-1">
                       <CheckCircle2 size={24}/>
                       <span>四選一測驗</span>
                   </div>
               </button>
-              <button onClick={() => setConfig({...config, type:'card'})} className={`p-4 rounded-2xl border-2 font-bold transition-all ${config.type==='card' ? 'border-indigo-600 bg-indigo-50 text-indigo-600 shadow-md' : 'border-slate-100 text-slate-400 hover:bg-slate-50'}`}>
+              <button onClick={() => setConfig({...config, type:'card'})} className={`p-4 rounded-2xl border-2 font-bold transition-all ${config.type==='card' ? 'border-violet-600 bg-violet-50 text-violet-600 shadow-md' : 'border-slate-100 text-slate-400 hover:bg-slate-50'}`}>
                  <div className="flex flex-col items-center gap-1">
                       <BookOpen size={24}/>
                       <span>翻卡練習</span>
@@ -531,7 +532,7 @@ function Quiz({ vocab, categories, db, user, appId, mockToggleFav }) {
             </div>
           </div>
         </div>
-        <button onClick={startMode} className="w-full py-5 bg-indigo-600 text-white rounded-3xl font-black text-lg shadow-xl shadow-indigo-200 hover:bg-indigo-700 hover:scale-[1.02] active:scale-95 transition-all">
+        <button onClick={startMode} className="w-full py-5 bg-violet-600 text-white rounded-3xl font-black text-lg shadow-xl shadow-violet-200 hover:bg-violet-700 hover:scale-[1.02] active:scale-95 transition-all">
           開始學習
         </button>
       </div>
@@ -544,22 +545,22 @@ function Quiz({ vocab, categories, db, user, appId, mockToggleFav }) {
       <div className="max-w-2xl mx-auto py-6 space-y-8">
         <div className="flex justify-between items-center px-4">
           <button onClick={()=>setGameState('config')} className="text-slate-400 font-bold flex items-center gap-1 hover:text-slate-600"><ChevronLeft size={16}/> 退出</button>
-          <div className="text-indigo-600 font-black bg-indigo-50 px-3 py-1 rounded-full text-xs">進度 {currentIdx + 1} / {questions.length}</div>
+          <div className="text-violet-600 font-black bg-violet-50 px-3 py-1 rounded-full text-xs">進度 {currentIdx + 1} / {questions.length}</div>
         </div>
         <div className="bg-white p-12 rounded-[3.5rem] shadow-2xl shadow-slate-200/50 relative border border-slate-50 text-center flex flex-col items-center justify-center min-h-[280px] gap-4">
           <button onClick={() => toggleFav(q.question)} className="absolute top-8 right-8 p-2 group">
              <Star className={`w-8 h-8 transition-all ${q.question.favorite ? 'fill-yellow-400 text-yellow-400 scale-110' : 'text-slate-200 group-hover:text-yellow-400'}`} />
           </button>
-          <span className="text-xs font-black text-indigo-500 bg-indigo-50 px-3 py-1 rounded-full uppercase tracking-widest">{q.question.pos}</span>
+          <span className="text-xs font-black text-violet-500 bg-violet-50 px-3 py-1 rounded-full uppercase tracking-widest">{q.question.pos}</span>
           <h2 className="text-4xl md:text-5xl lg:text-6xl font-black text-slate-900 break-all">{q.question.word}</h2>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {q.options.map(opt => (
             <button key={opt.id} onClick={() => handleAnswer(opt.id)} className={`p-6 rounded-3xl font-bold text-lg text-left transition-all border-2 shadow-sm relative overflow-hidden
-              ${selectedAns === null ? 'bg-white border-white hover:border-indigo-600 hover:shadow-lg' : 
+              ${selectedAns === null ? 'bg-white border-white hover:border-violet-600 hover:shadow-lg' : 
                 opt.id === q.question.id ? 'bg-green-500 border-green-500 text-white' : 
                 selectedAns === opt.id ? 'bg-red-500 border-red-500 text-white' : 'bg-white opacity-40'}`}>
-              <span className={`text-sm mr-2 uppercase ${selectedAns && (opt.id===q.question.id || selectedAns===opt.id) ? 'text-white/70' : 'text-slate-400'}`}>{opt.pos}</span> {opt.definition}
+               {opt.definition}
               {selectedAns === opt.id && selectedAns !== q.question.id && <X className="absolute right-4 top-1/2 -translate-y-1/2 opacity-50" />}
               {selectedAns !== null && opt.id === q.question.id && <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 opacity-50" />}
             </button>
@@ -575,32 +576,32 @@ function Quiz({ vocab, categories, db, user, appId, mockToggleFav }) {
       <div className="max-w-xl mx-auto py-6 space-y-8">
         <div className="flex justify-between items-center px-4">
           <button onClick={()=>setGameState('config')} className="text-slate-400 font-bold flex items-center gap-1 hover:text-slate-600"><ChevronLeft size={16}/> 退出</button>
-          <div className="text-indigo-600 font-black bg-indigo-50 px-3 py-1 rounded-full text-xs">{currentIdx + 1} / {questions.length}</div>
+          <div className="text-violet-600 font-black bg-violet-50 px-3 py-1 rounded-full text-xs">{currentIdx + 1} / {questions.length}</div>
         </div>
         <div className="perspective-1000 h-[450px] cursor-pointer group" onClick={() => setIsFlipped(!isFlipped)}>
           <div className={`relative w-full h-full transition-all duration-500 preserve-3d ${isFlipped ? 'rotate-y-180' : ''}`}>
              {/* Front: 顯示英文及詞性 */}
-             <div className="absolute inset-0 backface-hidden bg-white border border-slate-100 rounded-[3.5rem] shadow-2xl shadow-indigo-100 flex flex-col items-center justify-center p-8 space-y-6">
-               <span className="text-indigo-600 font-black uppercase text-xs tracking-widest bg-indigo-50 px-3 py-1 rounded-full">{q.question.pos}</span>
-               <h2 className="text-5xl md:text-6xl font-black text-slate-900 break-all text-center">{q.question.word}</h2>
+             <div className="absolute inset-0 backface-hidden bg-white border border-slate-100 rounded-[3.5rem] shadow-2xl shadow-violet-100 flex flex-col items-center justify-center p-8 space-y-6">
+               <span className="text-violet-600 font-black uppercase text-xs tracking-widest bg-violet-50 px-3 py-1 rounded-full">{q.question.pos}</span>
+               <h2 className="text-4xl md:text-5xl font-black text-slate-900 break-all text-center">{q.question.word}</h2>
                <div className="mt-8 flex flex-col items-center gap-2">
                  <p className="text-slate-300 font-bold text-xs uppercase tracking-widest">TAP TO FLIP</p>
                  <div className="w-1 h-1 bg-slate-300 rounded-full animate-bounce"></div>
                </div>
              </div>
              {/* Back: 顯示中文和例句 */}
-             <div className="absolute inset-0 backface-hidden rotate-y-180 bg-indigo-600 text-white rounded-[3.5rem] shadow-2xl flex flex-col items-center justify-center p-10 text-center space-y-8 overflow-hidden relative">
+             <div className="absolute inset-0 backface-hidden rotate-y-180 bg-violet-600 text-white rounded-[3.5rem] shadow-2xl flex flex-col items-center justify-center p-10 text-center space-y-6 overflow-hidden relative">
                <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl"></div>
                <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-black/10 rounded-full blur-3xl"></div>
                
                <div className="space-y-2 z-10">
-                 <span className="text-indigo-200 text-[10px] font-black uppercase tracking-[0.3em]">DEFINITION</span>
-                 <h2 className="text-3xl md:text-4xl font-black">{q.question.definition}</h2>
+                 <span className="text-violet-200 text-[10px] font-black uppercase tracking-[0.3em]">DEFINITION</span>
+                 <h2 className="text-2xl md:text-3xl font-black">{q.question.definition}</h2>
                </div>
                <div className="w-12 h-1 bg-white/20 rounded-full"></div>
                <div className="space-y-4 max-w-sm z-10">
                  <p className="text-white italic leading-relaxed text-lg">"{q.question.exampleEng}"</p>
-                 <p className="text-indigo-200 text-sm font-medium">{q.question.exampleChn}</p>
+                 <p className="text-violet-200 text-sm font-medium">{q.question.exampleChn}</p>
                </div>
              </div>
           </div>
@@ -611,7 +612,7 @@ function Quiz({ vocab, categories, db, user, appId, mockToggleFav }) {
           </button>
           <div className="flex gap-4">
             <button disabled={currentIdx === 0} onClick={() => { setCurrentIdx(currentIdx-1); setIsFlipped(false); }} className="p-4 bg-white rounded-2xl shadow-sm border border-slate-100 disabled:opacity-30 hover:bg-slate-50 transition-all"><ChevronLeft/></button>
-            <button onClick={() => { if(currentIdx+1 < questions.length) { setCurrentIdx(currentIdx+1); setIsFlipped(false); } else { setGameState('result'); } }} className="p-4 bg-indigo-600 text-white rounded-2xl shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:scale-110 transition-all"><ChevronRight/></button>
+            <button onClick={() => { if(currentIdx+1 < questions.length) { setCurrentIdx(currentIdx+1); setIsFlipped(false); } else { setGameState('result'); } }} className="p-4 bg-violet-600 text-white rounded-2xl shadow-lg shadow-violet-200 hover:bg-violet-700 hover:scale-110 transition-all"><ChevronRight/></button>
           </div>
         </div>
       </div>
@@ -630,10 +631,10 @@ function Quiz({ vocab, categories, db, user, appId, mockToggleFav }) {
           <div className="relative inline-block">
             <svg className="w-40 h-40 transform -rotate-90">
               <circle cx="80" cy="80" r="70" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-slate-100" />
-              <circle cx="80" cy="80" r="70" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-indigo-600" strokeDasharray={440} strokeDashoffset={440 - (440 * score) / questions.length} strokeLinecap="round" />
+              <circle cx="80" cy="80" r="70" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-violet-600" strokeDasharray={440} strokeDashoffset={440 - (440 * score) / questions.length} strokeLinecap="round" />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-                <span className="text-4xl font-black text-indigo-600">{Math.round((score/questions.length)*100)}%</span>
+                <span className="text-4xl font-black text-violet-600">{Math.round((score/questions.length)*100)}%</span>
                 <span className="text-xs font-bold text-slate-400 uppercase">Correct</span>
             </div>
           </div>
@@ -703,7 +704,7 @@ function CategoryManager({ categories, vocab, user, db, appId, showToast, mockAd
                  <button onClick={() => setActiveCat(null)} className="p-3 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition-all"><ArrowLeft size={20}/></button>
                  <div>
                     <h2 className="text-3xl font-black text-slate-900 flex items-center gap-2">
-                        <Folder className="text-indigo-600" /> {activeCat.name}
+                        <Folder className="text-violet-600" /> {activeCat.name}
                     </h2>
                     <p className="text-slate-400 font-bold mt-1 text-sm">共 {categoryVocab.length} 個單字</p>
                  </div>
@@ -712,7 +713,7 @@ function CategoryManager({ categories, vocab, user, db, appId, showToast, mockAd
              <div className="grid gap-3">
                {categoryVocab.length === 0 && <div className="text-center py-20 text-slate-300 font-bold">此分類目前沒有單字</div>}
                {categoryVocab.map(item => (
-                 <div key={item.id} className="bg-white border rounded-[1.5rem] transition-all duration-300 border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 overflow-hidden">
+                 <div key={item.id} className="bg-white border rounded-[1.5rem] transition-all duration-300 border-slate-100 shadow-sm hover:shadow-md hover:border-violet-100 overflow-hidden">
                    <div className="relative flex items-center justify-between gap-3 px-4 py-4 md:px-6 md:py-5 cursor-pointer" onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}>
                      <div className="flex items-center gap-4 flex-1 min-w-0">
                          <button onClick={(e) => toggleFavWord(e, item)} className="p-1 relative z-10 group"><Star className={`w-6 h-6 transition-all ${item.favorite ? 'fill-yellow-400 text-yellow-400 scale-110' : 'text-slate-200 group-hover:text-yellow-400'}`} /></button>
@@ -735,7 +736,7 @@ function CategoryManager({ categories, vocab, user, db, appId, showToast, mockAd
                              <button onClick={(e) => { e.stopPropagation(); setActiveCatSelector(null); }} className="text-slate-400 hover:text-slate-600"><X size={14}/></button>
                            </div>
                          ) : (
-                           <button onClick={(e) => { e.stopPropagation(); setActiveCatSelector(item.id); }} className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all" title="加入其他分類"><FolderPlus size={18} /></button>
+                           <button onClick={(e) => { e.stopPropagation(); setActiveCatSelector(item.id); }} className="p-2 text-slate-300 hover:text-violet-600 hover:bg-violet-50 rounded-xl transition-all" title="加入其他分類"><FolderPlus size={18} /></button>
                          )}
                          <button onClick={(e) => handleDeleteWord(e, item.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={18} /></button>
                      </div>
@@ -744,7 +745,7 @@ function CategoryManager({ categories, vocab, user, db, appId, showToast, mockAd
                      <div className="px-5 pb-5 md:px-14">
                        <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100/50">
                           <div className="flex gap-3 items-start">
-                              <div className="w-1 h-full bg-indigo-200 rounded-full min-h-[40px]"></div>
+                              <div className="w-1 h-full bg-violet-200 rounded-full min-h-[40px]"></div>
                               <div>
                                   <p className="font-bold text-slate-700 leading-relaxed text-lg">"{item.exampleEng}"</p>
                                   <p className="text-slate-400 text-sm mt-1">{item.exampleChn}</p>
@@ -771,14 +772,14 @@ function CategoryManager({ categories, vocab, user, db, appId, showToast, mockAd
     <div className="space-y-8 pb-20">
       <h2 className="text-4xl font-black text-slate-900">分類管理</h2>
       <div className="flex gap-3">
-        <input className="flex-1 px-6 py-4 bg-white border border-slate-200 rounded-2xl outline-none shadow-sm focus:ring-2 focus:ring-indigo-500 transition-all font-bold text-slate-700" placeholder="輸入新分類名稱..." value={newCatName} onChange={e => setNewCatName(e.target.value)} onKeyDown={(e)=>e.key==='Enter' && addCategory()} />
-        <button onClick={addCategory} className="px-6 py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"><Plus size={24}/></button>
+        <input className="flex-1 px-6 py-4 bg-white border border-slate-200 rounded-2xl outline-none shadow-sm focus:ring-2 focus:ring-violet-500 transition-all font-bold text-slate-700" placeholder="輸入新分類名稱..." value={newCatName} onChange={e => setNewCatName(e.target.value)} onKeyDown={(e)=>e.key==='Enter' && addCategory()} />
+        <button onClick={addCategory} className="px-6 py-4 bg-violet-600 text-white rounded-2xl font-bold hover:bg-violet-700 transition-colors shadow-lg shadow-violet-200"><Plus size={24}/></button>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {categories.map(cat => (
-          <div key={cat.id} onClick={() => setActiveCat(cat)} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-xl hover:shadow-indigo-100 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+          <div key={cat.id} onClick={() => setActiveCat(cat)} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-xl hover:shadow-violet-100 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
              <div className="flex items-center gap-4">
-               <div className="p-4 bg-indigo-50 rounded-2xl text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors"><Folder size={24}/></div>
+               <div className="p-4 bg-violet-50 rounded-2xl text-violet-600 group-hover:bg-violet-600 group-hover:text-white transition-colors"><Folder size={24}/></div>
                <div>
                  <p className="font-black text-slate-800 text-lg">{cat.name}</p>
                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{vocab.filter(v=>v.categoryIds?.includes(cat.id)).length} WORDS</p>
@@ -858,8 +859,8 @@ function AddVocab({ user, showToast, db, appId, setActiveTab, categories, mockAd
       <div className="text-center space-y-4">
         <h2 className="text-4xl font-black text-slate-900">{mode === 'single' ? '新增單字' : '批量匯入'}</h2>
         <div className="inline-flex bg-white p-1 rounded-2xl border border-slate-100 shadow-sm">
-          <button onClick={() => setMode('single')} className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${mode === 'single' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>單筆輸入</button>
-          <button onClick={() => setMode('bulk')} className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${mode === 'bulk' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>批量匯入</button>
+          <button onClick={() => setMode('single')} className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${mode === 'single' ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>單筆輸入</button>
+          <button onClick={() => setMode('bulk')} className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${mode === 'bulk' ? 'bg-violet-600 text-white shadow-lg' : 'text-slate-400 hover:text-slate-600'}`}>批量匯入</button>
         </div>
       </div>
 
@@ -869,7 +870,7 @@ function AddVocab({ user, showToast, db, appId, setActiveTab, categories, mockAd
            <div className="grid grid-cols-3 gap-4">
               <div className="col-span-2 space-y-2">
                   <label className="text-xs font-black text-slate-400 uppercase ml-2">單字 (Word)</label>
-                  <input required autoFocus className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-lg outline-none border border-slate-100 focus:border-indigo-500 focus:bg-white transition-all" value={formData.word} onChange={e => setFormData({...formData, word: e.target.value})} placeholder="Ex: Epiphany" />
+                  <input required autoFocus className="w-full p-4 bg-slate-50 rounded-2xl font-bold text-lg outline-none border border-slate-100 focus:border-violet-500 focus:bg-white transition-all" value={formData.word} onChange={e => setFormData({...formData, word: e.target.value})} placeholder="Ex: Epiphany" />
               </div>
               <div className="space-y-2">
                   <label className="text-xs font-black text-slate-400 uppercase ml-2">詞性</label>
@@ -881,17 +882,17 @@ function AddVocab({ user, showToast, db, appId, setActiveTab, categories, mockAd
 
            <div className="space-y-2">
               <label className="text-xs font-black text-slate-400 uppercase ml-2">中文定義 (Definition)</label>
-              <input required className="w-full p-4 bg-slate-50 rounded-2xl font-bold outline-none border border-slate-100 focus:border-indigo-500 focus:bg-white transition-all" value={formData.definition} onChange={e => setFormData({...formData, definition: e.target.value})} placeholder="Ex: 頓悟" />
+              <input required className="w-full p-4 bg-slate-50 rounded-2xl font-bold outline-none border border-slate-100 focus:border-violet-500 focus:bg-white transition-all" value={formData.definition} onChange={e => setFormData({...formData, definition: e.target.value})} placeholder="Ex: 頓悟" />
            </div>
 
            <div className="space-y-2">
               <label className="text-xs font-black text-slate-400 uppercase ml-2">英文例句 (Sentence)</label>
-              <textarea rows={2} className="w-full p-4 bg-slate-50 rounded-2xl font-medium outline-none border border-slate-100 focus:border-indigo-500 focus:bg-white transition-all" value={formData.exampleEng} onChange={e => setFormData({...formData, exampleEng: e.target.value})} placeholder="I had an epiphany..." />
+              <textarea rows={2} className="w-full p-4 bg-slate-50 rounded-2xl font-medium outline-none border border-slate-100 focus:border-violet-500 focus:bg-white transition-all" value={formData.exampleEng} onChange={e => setFormData({...formData, exampleEng: e.target.value})} placeholder="I had an epiphany..." />
            </div>
 
            <div className="space-y-2">
               <label className="text-xs font-black text-slate-400 uppercase ml-2">中文翻譯 (Translation)</label>
-              <textarea rows={2} className="w-full p-4 bg-slate-50 rounded-2xl font-medium outline-none border border-slate-100 focus:border-indigo-500 focus:bg-white transition-all" value={formData.exampleChn} onChange={e => setFormData({...formData, exampleChn: e.target.value})} placeholder="我突然頓悟了..." />
+              <textarea rows={2} className="w-full p-4 bg-slate-50 rounded-2xl font-medium outline-none border border-slate-100 focus:border-violet-500 focus:bg-white transition-all" value={formData.exampleChn} onChange={e => setFormData({...formData, exampleChn: e.target.value})} placeholder="我突然頓悟了..." />
            </div>
 
            <div className="space-y-2">
@@ -902,7 +903,7 @@ function AddVocab({ user, showToast, db, appId, setActiveTab, categories, mockAd
               </select>
            </div>
 
-           <button disabled={isProcessing} className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-indigo-200 hover:bg-indigo-700 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50">
+           <button disabled={isProcessing} className="w-full py-5 bg-violet-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-violet-200 hover:bg-violet-700 hover:scale-[1.01] active:scale-95 transition-all disabled:opacity-50">
                {isProcessing ? '儲存中...' : '新增單字'}
            </button>
         </form>
@@ -912,8 +913,8 @@ function AddVocab({ user, showToast, db, appId, setActiveTab, categories, mockAd
                <p>格式：單字; 詞性; 定義; 例句; 翻譯; 分類名稱 (選填)</p>
                <p className="mt-1 opacity-70 font-mono">Ex: Apple; n.; 蘋果; This is an apple; 這是一顆蘋果; 水果類</p>
            </div>
-           <textarea className="w-full h-64 p-4 bg-slate-50 rounded-2xl font-mono text-sm outline-none border border-slate-100 focus:border-indigo-500 focus:bg-white transition-all" placeholder={`Apple; n.; 蘋果\nBanana; n.; 香蕉`} value={bulkText} onChange={e => setBulkText(e.target.value)} />
-           <button onClick={handleSubmit} disabled={isProcessing || !bulkText.trim()} className="w-full py-5 bg-indigo-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-indigo-200 hover:bg-indigo-700 active:scale-95 transition-all disabled:opacity-50">
+           <textarea className="w-full h-64 p-4 bg-slate-50 rounded-2xl font-mono text-sm outline-none border border-slate-100 focus:border-violet-500 focus:bg-white transition-all" placeholder={`Apple; n.; 蘋果\nBanana; n.; 香蕉`} value={bulkText} onChange={e => setBulkText(e.target.value)} />
+           <button onClick={handleSubmit} disabled={isProcessing || !bulkText.trim()} className="w-full py-5 bg-violet-600 text-white rounded-2xl font-black text-lg shadow-xl shadow-violet-200 hover:bg-violet-700 active:scale-95 transition-all disabled:opacity-50">
                {isProcessing ? '匯入中...' : '開始匯入'}
            </button>
         </div>

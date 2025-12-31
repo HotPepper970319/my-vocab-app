@@ -12,7 +12,7 @@ import {
   BookOpen, Star, PlusCircle, GraduationCap, Search, 
   Trash2, CheckCircle2, LogOut, X, 
   Folder, Tags, Plus, Menu, 
-  ChevronLeft, ChevronRight, FolderPlus, ArrowLeft
+  ChevronLeft, ChevronRight, FolderPlus, ArrowLeft, Layers
 } from 'lucide-react';
 
 // --- Firebase 配置 ---
@@ -160,7 +160,7 @@ export default function App() {
           <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" className="w-5 h-5 group-hover:scale-110 transition-transform" alt="G" /> 
           使用 Google 登入
         </button>
-        <div className="pt-4 text-slate-300 text-xs font-mono">v1.3.1 (Alpha)</div>
+        <div className="pt-4 text-slate-300 text-xs font-mono">v1.1.0</div>
       </div>
     </div>
   );
@@ -193,7 +193,7 @@ export default function App() {
         </nav>
         <div className="p-4 border-t border-slate-100 space-y-2">
           {/* 版本顯示改到這裡 */}
-          <div className="px-1 text-xs font-bold text-slate-300 font-mono text-center mb-1">v1.3.1 (Alpha)</div>
+          <div className="px-1 text-xs font-bold text-slate-300 font-mono text-center mb-1">v1.1.0</div>
           <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-2xl truncate border border-slate-100">
              <img src={user.photoURL} className="w-8 h-8 rounded-full shadow-sm bg-white" alt="avt" />
              <div className="flex flex-col truncate">
@@ -320,9 +320,6 @@ function VocabLibrary({ vocab, user, title, db, appId, categories, showToast, mo
             <h2 className="text-3xl md:text-4xl font-black text-slate-900">{title}</h2>
             <p className="text-slate-400 font-bold mt-1 text-sm">共 {filtered.length} 個單字</p>
         </div>
-        <button onClick={() => { setIsBulkMode(!isBulkMode); setSelectedIds([]); }} className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${isBulkMode ? 'bg-violet-600 text-white shadow-lg shadow-violet-200' : 'bg-white border border-slate-200 text-slate-500 hover:bg-slate-50'}`}>
-          {isBulkMode ? '取消選取' : '批量管理'}
-        </button>
       </div>
 
       <div className="relative group">
@@ -331,7 +328,7 @@ function VocabLibrary({ vocab, user, title, db, appId, categories, showToast, mo
       </div>
 
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          {['all', 'n.', 'v.', 'adj.', 'adv.', 'phr.', 'conj.'].map(p => (
+          {['all', 'n.', 'v.', 'adj.', 'adv.', 'phr.', 'conj.', 'prep.', '其他'].map(p => (
               <button key={p} onClick={()=>setPosFilter(p)} className={`px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all ${posFilter===p ? 'bg-slate-800 text-white shadow-md' : 'bg-white text-slate-400 border border-slate-200 hover:border-slate-300'}`}>
                   {p === 'all' ? '全部' : p}
               </button>
@@ -349,6 +346,15 @@ function VocabLibrary({ vocab, user, title, db, appId, categories, showToast, mo
           </div>
         </div>
       )}
+
+      {/* 浮動批量管理按鈕 */}
+      <button 
+        onClick={() => { setIsBulkMode(!isBulkMode); setSelectedIds([]); }} 
+        className={`fixed bottom-8 right-8 z-40 px-6 py-4 rounded-full font-black text-sm shadow-2xl transition-all transform hover:scale-105 flex items-center gap-2 ${isBulkMode ? 'bg-violet-600 text-white shadow-violet-300 ring-4 ring-violet-100' : 'bg-white text-slate-700 border border-slate-200'}`}
+      >
+        {isBulkMode ? <X size={20}/> : <Layers size={20}/>}
+        {isBulkMode ? '取消選取' : '批量管理'}
+      </button>
 
       <div className="grid gap-3">
         {filtered.length === 0 && <div className="text-center py-20 text-slate-300 font-bold">沒有找到相關單字</div>}

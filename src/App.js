@@ -6,13 +6,13 @@ import {
 } from 'firebase/auth';
 import { 
   getFirestore, collection, doc, addDoc, updateDoc, deleteDoc, 
-  onSnapshot, query, serverTimestamp, arrayUnion 
+  onSnapshot, query, serverTimestamp, arrayUnion, arrayRemove
 } from 'firebase/firestore';
 import { 
   BookOpen, Star, PlusCircle, GraduationCap, Search, 
   Trash2, CheckCircle2, LogOut, X, 
   Folder, Tags, Plus, Menu, 
-  ChevronLeft, ChevronRight, FolderPlus
+  ChevronLeft, ChevronRight, FolderPlus, ArrowLeft
 } from 'lucide-react';
 
 // --- Firebase 配置 ---
@@ -196,7 +196,7 @@ export default function App() {
              <img src={user.photoURL} className="w-8 h-8 rounded-full shadow-sm bg-white" alt="avt" />
              <div className="flex flex-col truncate">
                 <span className="text-xs font-black text-slate-700 truncate">{user.displayName}</span>
-                <span className="text-[10px] text-slate-400 font-bold">Free Plan</span>
+                {/* Free Plan 已移除 */}
              </div>
           </div>
           <button onClick={() => setShowLogoutConfirm(true)} className="w-full flex items-center justify-center gap-2 px-4 py-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all text-xs font-bold">
@@ -216,7 +216,7 @@ export default function App() {
 
       <main className="flex-1 p-4 md:ml-64 md:p-10 max-w-6xl w-full mx-auto">
         {activeTab === 'library' && <VocabLibrary vocab={vocabList} user={user} title="所有單字" db={db} appId={appId} categories={categories} showToast={showToast} mockDelete={mockDeleteVocab} mockToggleFav={mockToggleFav} />}
-        {activeTab === 'database' && <CategoryManager categories={categories} vocab={vocabList} user={user} db={db} appId={appId} showToast={showToast} mockAdd={mockAddCategory} />}
+        {activeTab === 'database' && <CategoryManager categories={categories} vocab={vocabList} user={user} db={db} appId={appId} showToast={showToast} mockAdd={mockAddCategory} mockDelete={mockDeleteVocab} mockToggleFav={mockToggleFav} />}
         {activeTab === 'fav' && <VocabLibrary vocab={vocabList.filter(v => v.favorite)} user={user} title="收藏單字" db={db} appId={appId} categories={categories} showToast={showToast} mockDelete={mockDeleteVocab} mockToggleFav={mockToggleFav} />}
         {activeTab === 'add' && <AddVocab user={user} showToast={showToast} db={db} appId={appId} setActiveTab={setActiveTab} categories={categories} mockAdd={mockAddVocab} />}
         {activeTab === 'quiz' && <Quiz vocab={vocabList} categories={categories} db={db} user={user} appId={appId} mockToggleFav={mockToggleFav} />}
@@ -331,7 +331,7 @@ function VocabLibrary({ vocab, user, title, db, appId, categories, showToast, mo
 
       <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
           {['all', 'n.', 'v.', 'adj.', 'adv.', 'phr.'].map(p => (
-              <button key={p} onClick={()=>setPosFilter(p)} className={`px-4 py-2 rounded-xl text-xs font-black uppercase whitespace-nowrap transition-all ${posFilter===p ? 'bg-slate-800 text-white shadow-md' : 'bg-white text-slate-400 border border-slate-200 hover:border-slate-300'}`}>
+              <button key={p} onClick={()=>setPosFilter(p)} className={`px-4 py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all ${posFilter===p ? 'bg-slate-800 text-white shadow-md' : 'bg-white text-slate-400 border border-slate-200 hover:border-slate-300'}`}>
                   {p === 'all' ? '全部' : p}
               </button>
           ))}
@@ -394,7 +394,7 @@ function VocabLibrary({ vocab, user, title, db, appId, categories, showToast, mo
                    <div className="flex gap-3 items-start">
                        <div className="w-1 h-full bg-indigo-200 rounded-full min-h-[40px]"></div>
                        <div>
-                           <p className="font-bold text-slate-700 leading-relaxed text-lg font-serif">"{item.exampleEng}"</p>
+                           <p className="font-bold text-slate-700 leading-relaxed text-lg">"{item.exampleEng}"</p>
                            <p className="text-slate-400 text-sm mt-1">{item.exampleChn}</p>
                        </div>
                    </div>
@@ -471,6 +471,13 @@ function Quiz({ vocab, categories, db, user, appId, mockToggleFav }) {
   };
 
   const toggleFav = async (item) => {
+    // 立即更新本地 UI 狀態
+    setQuestions(prev => prev.map(q => 
+        q.question.id === item.id 
+        ? { ...q, question: { ...q.question, favorite: !q.question.favorite } } 
+        : q
+    ));
+    // 更新資料庫
     if (db) await updateDoc(doc(db, `artifacts/${appId}/users/${user.uid}/vocabulary`, item.id), { favorite: !item.favorite });
     else mockToggleFav(item.id);
   };
@@ -592,7 +599,7 @@ function Quiz({ vocab, categories, db, user, appId, mockToggleFav }) {
                </div>
                <div className="w-12 h-1 bg-white/20 rounded-full"></div>
                <div className="space-y-4 max-w-sm z-10">
-                 <p className="text-white font-serif italic leading-relaxed text-lg">"{q.question.exampleEng}"</p>
+                 <p className="text-white italic leading-relaxed text-lg">"{q.question.exampleEng}"</p>
                  <p className="text-indigo-200 text-sm font-medium">{q.question.exampleChn}</p>
                </div>
              </div>
@@ -643,8 +650,12 @@ function Quiz({ vocab, categories, db, user, appId, mockToggleFav }) {
 }
 
 // --- 分類管理組件 ---
-function CategoryManager({ categories, vocab, user, db, appId, showToast, mockAdd }) {
+function CategoryManager({ categories, vocab, user, db, appId, showToast, mockAdd, mockDelete, mockToggleFav }) {
   const [newCatName, setNewCatName] = useState('');
+  const [activeCat, setActiveCat] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
+  const [activeCatSelector, setActiveCatSelector] = useState(null);
+
   const addCategory = async () => {
     if (!newCatName.trim()) return;
     if(db) await addDoc(collection(db, `artifacts/${appId}/users/${user.uid}/categories`), { name: newCatName, createdAt: serverTimestamp() });
@@ -653,11 +664,107 @@ function CategoryManager({ categories, vocab, user, db, appId, showToast, mockAd
     showToast('分類已建立');
   };
   
-  const handleDelete = async(cat) => {
+  const handleDeleteCategory = async(cat) => {
       if(window.confirm('確定刪除此分類？(不會刪除分類下的單字)')) {
          if(db) await deleteDoc(doc(db, `artifacts/${appId}/users/${user.uid}/categories`, cat.id));
          else showToast('刪除成功 (Demo)');
       }
+  }
+
+  // --- 內部單字操作 (複製自 VocabLibrary 但只處理單個) ---
+  const handleAddCategoryToWord = async (vId, catId) => {
+      if (!catId) return;
+      if (db) {
+          await updateDoc(doc(db, `artifacts/${appId}/users/${user.uid}/vocabulary`, vId), {
+              categoryIds: arrayUnion(catId)
+          });
+      }
+      showToast(`已成功加入分類`);
+      setActiveCatSelector(null);
+  };
+  const handleDeleteWord = async (e, id) => {
+      e.stopPropagation();
+      if(window.confirm('確定刪除？')) {
+          if (db) await deleteDoc(doc(db, `artifacts/${appId}/users/${user.uid}/vocabulary`, id));
+          else mockDelete(id);
+      }
+  };
+  const toggleFavWord = async (e, item) => {
+      e.stopPropagation();
+      if(db) await updateDoc(doc(db, `artifacts/${appId}/users/${user.uid}/vocabulary`, item.id), { favorite: !item.favorite });
+      else mockToggleFav(item.id);
+  };
+
+  if (activeCat) {
+      const categoryVocab = vocab.filter(v => v.categoryIds?.includes(activeCat.id));
+      return (
+          <div className="space-y-6 pb-20 animate-in slide-in-from-right-10 duration-300">
+             <div className="flex items-center gap-4 mb-8">
+                 <button onClick={() => setActiveCat(null)} className="p-3 bg-white rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition-all"><ArrowLeft size={20}/></button>
+                 <div>
+                    <h2 className="text-3xl font-black text-slate-900 flex items-center gap-2">
+                        <Folder className="text-indigo-600" /> {activeCat.name}
+                    </h2>
+                    <p className="text-slate-400 font-bold mt-1 text-sm">共 {categoryVocab.length} 個單字</p>
+                 </div>
+             </div>
+             
+             <div className="grid gap-3">
+               {categoryVocab.length === 0 && <div className="text-center py-20 text-slate-300 font-bold">此分類目前沒有單字</div>}
+               {categoryVocab.map(item => (
+                 <div key={item.id} className="bg-white border rounded-[1.5rem] transition-all duration-300 border-slate-100 shadow-sm hover:shadow-md hover:border-indigo-100 overflow-hidden">
+                   <div className="relative flex items-center justify-between gap-3 px-4 py-4 md:px-6 md:py-5 cursor-pointer" onClick={() => setExpandedId(expandedId === item.id ? null : item.id)}>
+                     <div className="flex items-center gap-4 flex-1 min-w-0">
+                         <button onClick={(e) => toggleFavWord(e, item)} className="p-1 relative z-10 group"><Star className={`w-6 h-6 transition-all ${item.favorite ? 'fill-yellow-400 text-yellow-400 scale-110' : 'text-slate-200 group-hover:text-yellow-400'}`} /></button>
+                       <div className="pointer-events-none flex-1 min-w-0">
+                         <div className="flex items-baseline gap-2">
+                           <h3 className="font-black text-xl text-slate-800 truncate">{item.word}</h3>
+                           <span className="text-[10px] font-black bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded uppercase tracking-wide">{item.pos}</span>
+                         </div>
+                         <p className="text-slate-500 text-sm truncate w-full">{item.definition}</p>
+                       </div>
+                     </div>
+
+                     <div className="flex items-center gap-1 relative z-10 pl-2">
+                         {activeCatSelector === item.id ? (
+                           <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl animate-in zoom-in duration-200">
+                             <select autoFocus className="text-xs bg-transparent border-none outline-none font-bold text-slate-600 px-1 w-20" onChange={(e) => handleAddCategoryToWord(item.id, e.target.value)} onBlur={() => setActiveCatSelector(null)} value="">
+                                 <option value="" disabled>分類</option>
+                                 {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                             </select>
+                             <button onClick={(e) => { e.stopPropagation(); setActiveCatSelector(null); }} className="text-slate-400 hover:text-slate-600"><X size={14}/></button>
+                           </div>
+                         ) : (
+                           <button onClick={(e) => { e.stopPropagation(); setActiveCatSelector(item.id); }} className="p-2 text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all" title="加入其他分類"><FolderPlus size={18} /></button>
+                         )}
+                         <button onClick={(e) => handleDeleteWord(e, item.id)} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={18} /></button>
+                     </div>
+                   </div>
+                   {expandedId === item.id && (
+                     <div className="px-5 pb-5 md:px-14">
+                       <div className="p-5 bg-slate-50 rounded-2xl border border-slate-100/50">
+                          <div className="flex gap-3 items-start">
+                              <div className="w-1 h-full bg-indigo-200 rounded-full min-h-[40px]"></div>
+                              <div>
+                                  <p className="font-bold text-slate-700 leading-relaxed text-lg">"{item.exampleEng}"</p>
+                                  <p className="text-slate-400 text-sm mt-1">{item.exampleChn}</p>
+                              </div>
+                          </div>
+                          <div className="mt-4 flex flex-wrap gap-2 pt-3 border-t border-slate-100">
+                            {item.categoryIds?.length > 0 ? item.categoryIds.map(cid => (
+                              <span key={cid} className="text-[10px] bg-white border border-slate-200 text-slate-500 px-2 py-1 rounded-full font-bold flex items-center gap-1">
+                                  <Folder size={10} /> {categories.find(c => c.id === cid)?.name || '未命名'}
+                              </span>
+                            )) : <span className="text-[10px] text-slate-300 italic">未分類</span>}
+                          </div>
+                       </div>
+                     </div>
+                   )}
+                 </div>
+               ))}
+             </div>
+          </div>
+      )
   }
 
   return (
@@ -669,7 +776,7 @@ function CategoryManager({ categories, vocab, user, db, appId, showToast, mockAd
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
         {categories.map(cat => (
-          <div key={cat.id} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-xl hover:shadow-indigo-100 hover:-translate-y-1 transition-all duration-300">
+          <div key={cat.id} onClick={() => setActiveCat(cat)} className="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm flex items-center justify-between group hover:shadow-xl hover:shadow-indigo-100 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
              <div className="flex items-center gap-4">
                <div className="p-4 bg-indigo-50 rounded-2xl text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors"><Folder size={24}/></div>
                <div>
@@ -677,7 +784,7 @@ function CategoryManager({ categories, vocab, user, db, appId, showToast, mockAd
                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{vocab.filter(v=>v.categoryIds?.includes(cat.id)).length} WORDS</p>
                </div>
              </div>
-             <button onClick={() => handleDelete(cat)} className="text-slate-200 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-2"><Trash2 size={20}/></button>
+             <button onClick={(e) => { e.stopPropagation(); handleDeleteCategory(cat); }} className="text-slate-200 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 p-2"><Trash2 size={20}/></button>
           </div>
         ))}
       </div>

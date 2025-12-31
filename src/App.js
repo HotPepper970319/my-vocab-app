@@ -153,7 +153,7 @@ export default function App() {
             <GraduationCap className="text-white w-10 h-10" />
         </div>
         <div>
-            <h1 className="text-3xl font-black text-slate-800 tracking-tight">學測單字雲</h1>
+            <h1 className="text-3xl font-black text-slate-800 tracking-tight">英文單字雲</h1>
             <p className="text-slate-400 font-medium mt-2">個人化的英文單字學習助手</p>
         </div>
         <button onClick={handleLogin} className="w-full flex items-center justify-center gap-3 py-4 bg-white border-2 border-slate-100 rounded-2xl font-bold text-slate-700 hover:bg-slate-50 hover:border-slate-200 transition-all shadow-sm group">

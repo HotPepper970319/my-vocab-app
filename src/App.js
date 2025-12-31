@@ -425,6 +425,8 @@ function Quiz({ vocab, categories, db, user, appId, mockToggleFav }) {
   const [score, setScore] = useState(0);
   const [selectedAns, setSelectedAns] = useState(null);
   const [isFlipped, setIsFlipped] = useState(false);
+  // 新增：儲存答題結果
+  const [results, setResults] = useState([]); 
 
   const startMode = () => {
     let pool = [...vocab];
@@ -455,12 +457,20 @@ function Quiz({ vocab, categories, db, user, appId, mockToggleFav }) {
     }
     setCurrentIdx(0);
     setScore(0);
+    setResults([]); // 重置答題紀錄
   };
 
   const handleAnswer = (optionId) => {
     if (selectedAns !== null) return;
     setSelectedAns(optionId);
-    if (optionId === questions[currentIdx].question.id) setScore(score + 1);
+    
+    // 判斷是否正確
+    const isCorrect = optionId === questions[currentIdx].question.id;
+    if (isCorrect) setScore(score + 1);
+    
+    // 儲存結果
+    setResults(prev => [...prev, isCorrect]);
+
     setTimeout(() => {
       if (currentIdx + 1 < questions.length) {
         setCurrentIdx(currentIdx + 1);
@@ -640,6 +650,35 @@ function Quiz({ vocab, categories, db, user, appId, mockToggleFav }) {
           </div>
         )}
         
+        {/* 新增：詳細答題列表 */}
+        {config.type === 'choice' && (
+            <div className="mt-4 text-left space-y-3">
+                <h3 className="font-bold text-slate-700 mb-2 px-2 text-sm uppercase tracking-wide">測驗詳情</h3>
+                <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 scrollbar-hide">
+                    {questions.map((qItem, idx) => {
+                        const isCorrect = results[idx];
+                        const word = qItem.question;
+                        return (
+                            <div key={word.id} className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100 hover:bg-slate-100 transition-colors">
+                                <div className="flex items-center gap-4 flex-1 min-w-0">
+                                    <div className={`p-2 rounded-full shrink-0 ${isCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                                        {isCorrect ? <CheckCircle2 size={16} /> : <X size={16} />}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <p className="font-black text-slate-800 truncate">{word.word}</p>
+                                        <p className="text-xs text-slate-500 truncate">{word.definition}</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => toggleFav(word)} className="p-2 ml-2">
+                                     <Star className={`w-5 h-5 transition-all ${word.favorite ? 'fill-yellow-400 text-yellow-400' : 'text-slate-300 hover:text-yellow-400'}`} />
+                                </button>
+                            </div>
+                        )
+                    })}
+                </div>
+            </div>
+        )}
+
         <div className="bg-slate-50 p-6 rounded-3xl">
             <p className="text-slate-600 font-black text-lg">{config.type === 'choice' ? `答對了 ${score} / ${questions.length} 題` : `複習了 ${questions.length} 個單字`}</p>
         </div>
